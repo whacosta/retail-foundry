@@ -20,6 +20,30 @@ body {
     padding: 30px;
 }
 
+.contable {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.location-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.location-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
 header {
     display: flex;
     justify-content: space-between;

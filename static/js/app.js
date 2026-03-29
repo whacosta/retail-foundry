@@ -131,13 +131,27 @@ locationForm.addEventListener('submit', async (e) => {
         return;
     }
     
+    const latitude = parseFloat(document.getElementById('latitude').value);
+    const longitude = parseFloat(document.getElementById('longitude').value);
+    
+    // Validar coordenadas
+    if (latitude < -90 || latitude > 90) {
+        alert('❌ La latitud debe estar entre -90 y 90 grados');
+        return;
+    }
+    
+    if (longitude < -180 || longitude > 180) {
+        alert('❌ La longitud debe estar entre -180 y 180 grados');
+        return;
+    }
+    
     const locationId = document.getElementById('locationId').value;
     const locationData = {
         name: document.getElementById('name').value,
         type: document.getElementById('locationType').value,
         size: parseFloat(document.getElementById('locationSize').value),
-        latitude: parseFloat(document.getElementById('latitude').value),
-        longitude: parseFloat(document.getElementById('longitude').value),
+        latitude: latitude,
+        longitude: longitude,
         homes_5min: parseInt(document.getElementById('homes5Min').value),
         percent_homes_5: parseFloat(document.getElementById('percentHomes5').value),
         homes_10min: parseInt(document.getElementById('homes10Min').value),
@@ -223,11 +237,18 @@ function loadLocations() {
         if (data.locations && data.locations.length > 0) {
             data.locations.forEach(location => {
                 const zoneName = mobilityZones.find(z => z.id === location.mobility_zone_id)?.name || 'N/A';
+                const googleMapsUrl = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${location.id}</td>
                     <td>${location.name}</td>
                     <td>${zoneName}</td>
+                    <td>
+                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="location-link" title="Ver en Google Maps">
+                            📍 ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}
+                        </a>
+                    </td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn btn-info" onclick="window.viewEvaluation(${location.id})">Ver Evaluación</button>
@@ -239,7 +260,7 @@ function loadLocations() {
                 tableBody.appendChild(row);
             });
         } else {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
         }
 
         const totalPages = Math.ceil(data.total / limit);
