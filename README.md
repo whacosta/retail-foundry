@@ -2,7 +2,9 @@
 
 **Single Page Application (SPA)** para analizar la factibilidad de localidades para abrir tiendas de retail.
 
-> **Versión 2.0** - Migrada de Go + SQLite a JavaScript puro + localStorage
+> **Versión 2.0** - JavaScript puro + localStorage
+
+🌐 **Demo en vivo:** [https://whacosta.github.io/retail-foundry/](https://whacosta.github.io/retail-foundry/)
 
 ## 🚀 Inicio Rápido
 

@@ -332,72 +332,6 @@ function openConfigModal() {
                     </div>
                 </div>
             </div>
-            
-            <div class="config-section">
-                <div class="config-section-title">Rangos de Pesos de Competencia (%)</div>
-                <div class="weight-grid">
-                    <div class="weight-range-item">
-                        <label>Supermercado</label>
-                        <div class="range-inputs">
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-supermercados-min" data-zone-id="${zone.id}" value="${zone.weight_supermercados_min}" placeholder="Min" required>
-                            </div>
-                            <span class="range-separator">-</span>
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-supermercados-max" data-zone-id="${zone.id}" value="${zone.weight_supermercados_max}" placeholder="Max" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="weight-range-item">
-                        <label>Discounters</label>
-                        <div class="range-inputs">
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-discounters-min" data-zone-id="${zone.id}" value="${zone.weight_discounters_min}" placeholder="Min" required>
-                            </div>
-                            <span class="range-separator">-</span>
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-discounters-max" data-zone-id="${zone.id}" value="${zone.weight_discounters_max}" placeholder="Max" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="weight-range-item">
-                        <label>Tradicional</label>
-                        <div class="range-inputs">
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-tradicional-min" data-zone-id="${zone.id}" value="${zone.weight_tradicional_min}" placeholder="Min" required>
-                            </div>
-                            <span class="range-separator">-</span>
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-tradicional-max" data-zone-id="${zone.id}" value="${zone.weight_tradicional_max}" placeholder="Max" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="weight-range-item">
-                        <label>Especializados</label>
-                        <div class="range-inputs">
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-especializados-min" data-zone-id="${zone.id}" value="${zone.weight_especializados_min}" placeholder="Min" required>
-                            </div>
-                            <span class="range-separator">-</span>
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-especializados-max" data-zone-id="${zone.id}" value="${zone.weight_especializados_max}" placeholder="Max" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="weight-range-item">
-                        <label>Otros</label>
-                        <div class="range-inputs">
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-otros-min" data-zone-id="${zone.id}" value="${zone.weight_otros_min}" placeholder="Min" required>
-                            </div>
-                            <span class="range-separator">-</span>
-                            <div class="input-with-symbol" data-symbol="%">
-                                <input type="number" step="0.01" class="zone-weight-otros-max" data-zone-id="${zone.id}" value="${zone.weight_otros_max}" placeholder="Max" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         `;
         zonesConfig.appendChild(tabContent);
     });
@@ -426,31 +360,10 @@ configForm.addEventListener('submit', async (e) => {
             const percent10Input = document.querySelector(`.zone-percent-10[data-zone-id="${zone.id}"]`);
             const percentExpensesInput = document.querySelector(`.zone-percent-expenses[data-zone-id="${zone.id}"]`);
             
-            const weightSupermercadosMinInput = document.querySelector(`.zone-weight-supermercados-min[data-zone-id="${zone.id}"]`);
-            const weightSupermercadosMaxInput = document.querySelector(`.zone-weight-supermercados-max[data-zone-id="${zone.id}"]`);
-            const weightDiscountersMinInput = document.querySelector(`.zone-weight-discounters-min[data-zone-id="${zone.id}"]`);
-            const weightDiscountersMaxInput = document.querySelector(`.zone-weight-discounters-max[data-zone-id="${zone.id}"]`);
-            const weightTradicionalMinInput = document.querySelector(`.zone-weight-tradicional-min[data-zone-id="${zone.id}"]`);
-            const weightTradicionalMaxInput = document.querySelector(`.zone-weight-tradicional-max[data-zone-id="${zone.id}"]`);
-            const weightEspecializadosMinInput = document.querySelector(`.zone-weight-especializados-min[data-zone-id="${zone.id}"]`);
-            const weightEspecializadosMaxInput = document.querySelector(`.zone-weight-especializados-max[data-zone-id="${zone.id}"]`);
-            const weightOtrosMinInput = document.querySelector(`.zone-weight-otros-min[data-zone-id="${zone.id}"]`);
-            const weightOtrosMaxInput = document.querySelector(`.zone-weight-otros-max[data-zone-id="${zone.id}"]`);
-            
             const update = {
                 percent_homes_5: parseFloat(percent5Input.value),
                 percent_homes_10: parseFloat(percent10Input.value),
-                percent_expenses: parseFloat(percentExpensesInput.value),
-                weight_supermercados_min: parseFloat(weightSupermercadosMinInput.value),
-                weight_supermercados_max: parseFloat(weightSupermercadosMaxInput.value),
-                weight_discounters_min: parseFloat(weightDiscountersMinInput.value),
-                weight_discounters_max: parseFloat(weightDiscountersMaxInput.value),
-                weight_tradicional_min: parseFloat(weightTradicionalMinInput.value),
-                weight_tradicional_max: parseFloat(weightTradicionalMaxInput.value),
-                weight_especializados_min: parseFloat(weightEspecializadosMinInput.value),
-                weight_especializados_max: parseFloat(weightEspecializadosMaxInput.value),
-                weight_otros_min: parseFloat(weightOtrosMinInput.value),
-                weight_otros_max: parseFloat(weightOtrosMaxInput.value)
+                percent_expenses: parseFloat(percentExpensesInput.value)
             };
             
             updateMobilityZone(zone.id, update);
