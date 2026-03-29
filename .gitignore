@@ -29,3 +29,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Archivos de instrucciones internas
+instrucciones.md

@@ -169,6 +169,41 @@ export const DEFAULT_NSE_INCOME = {
     income_b: 4013
 };
 
+// Factores de Mercado Efectivo por NSE y Tipo de Localidad
+// Representa el porcentaje de la población de cada NSE que es mercado efectivo para cada tipo de formato
+export const EFFECTIVE_MARKET_FACTORS = {
+    'Supermercado': {
+        b: 0.70,
+        c_plus: 0.60,
+        c_minus: 0.40,
+        d: 0.20
+    },
+    'Discounters': {
+        b: 0.20,
+        c_plus: 0.35,
+        c_minus: 0.60,
+        d: 0.70
+    },
+    'Tradicional': {
+        b: 0.25,
+        c_plus: 0.40,
+        c_minus: 0.55,
+        d: 0.65
+    },
+    'Especializados': {
+        b: 0.40,
+        c_plus: 0.30,
+        c_minus: 0.20,
+        d: 0.10
+    },
+    'Otros': {
+        b: 0.10,
+        c_plus: 0.10,
+        c_minus: 0.10,
+        d: 0.10
+    }
+};
+
 // Configuración de localStorage
 export const STORAGE_KEYS = {
     LOCATIONS: 'rf_locations',

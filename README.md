@@ -48,6 +48,25 @@
 - **`type`**: Tipo (Supermercado, Discounters, Tradicional, Especializados, Otros)
 - **`size`**: Tamaño en metros cuadrados (m²)
 
+### 📊 Cálculo de Población Efectiva
+
+La aplicación calcula la **Población Efectiva** (mercado objetivo real) basándose en el NSE y el tipo de localidad, aplicando factores de mercado específicos:
+
+#### Tabla de Factores de Mercado Efectivo por NSE y Formato
+
+| NSE / Formato | Supermercado | Discounters | Tradicional | Especializados | Otros |
+|---------------|--------------|-------------|-------------|----------------|-------|
+| **B**         | 70%          | 20%         | 25%         | 40%            | 10%   |
+| **C+**        | 60%          | 35%         | 40%         | 30%            | 10%   |
+| **C-**        | 40%          | 60%         | 55%         | 20%            | 10%   |
+| **D**         | 20%          | 70%         | 65%         | 10%            | 10%   |
+
+**Ejemplo de cálculo:**
+- Si una localidad tipo "Supermercado" tiene 1000 hogares NSE B, la población efectiva de ese segmento será: 1000 × 0.70 = 700 hogares
+- La población efectiva total es la suma de todos los segmentos NSE aplicando sus respectivos factores
+
+**Nota:** Los cálculos de gastos y viabilidad se basan en la población efectiva, no en la población total.
+
 ### Campos Renombrados
 
 | Campo Anterior | Campo Nuevo | Descripción |

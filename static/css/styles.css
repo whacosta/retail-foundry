@@ -184,6 +184,8 @@ th {
     padding: 15px;
     text-align: left;
     font-weight: 600;
+    font-size: 0.85em;
+    white-space: nowrap;
 }
 
 td {
@@ -530,6 +532,73 @@ h3 {
 
 .big-number.total {
     color: #ffd700;
+}
+
+.section.highlight-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 40px 30px;
+}
+
+.section.highlight-primary h2 {
+    color: white;
+    font-size: 1.8em;
+    margin-bottom: 15px;
+}
+
+.big-number-primary {
+    font-size: 3.5em;
+    font-weight: 800;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.market-factor-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.market-factor-info small {
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.5;
+}
+
+.section.secondary-info {
+    background: #f8f9fa;
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #e0e0e0;
+}
+
+.info-item-inline {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.label-small {
+    font-size: 0.9em;
+    color: #666;
+    font-weight: 600;
+}
+
+.value-small {
+    font-size: 0.9em;
+    color: #333;
+    font-weight: 500;
+}
+
+.nse-effective {
+    font-weight: 500;
+    font-size: 0.95em;
+    margin-top: 5px;
 }
 
 .nse-grid {

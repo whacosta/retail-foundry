@@ -5,6 +5,8 @@ import {
     ACCESSIBILITY_VALUES,
     COMPETITION_LEVEL_RANGES,
     DISTANCE_THRESHOLDS,
+    COMPETITOR_TYPES, 
+    EFFECTIVE_MARKET_FACTORS,
     VIABILITY_CRITERIA
 } from './constants.js';
 
@@ -199,34 +201,85 @@ export function calculateCompetitorMetrics(competitor, location, zone, totalComp
 }
 
 /**
+ * Calcula la población efectiva basada en NSE y tipo de localidad
+ * @param {object} location - Objeto localidad
+ * @returns {object} Objeto con población total y efectiva
+ */
+export function calculateEffectivePopulation(location) {
+    // Población total (hogares totales)
+    const totalPopulation = 
+        location.homes_5min * (location.percent_homes_5 / 100.0) + 
+        location.homes_10min * (location.percent_homes_10 / 100.0);
+    
+    // Hogares por NSE
+    const homesD = totalPopulation * (location.percent_nse_d / 100.0);
+    const homesCMinus = totalPopulation * (location.percent_nse_c_minus / 100.0);
+    const homesCPlus = totalPopulation * (location.percent_nse_c_plus / 100.0);
+    const homesB = totalPopulation * (location.percent_nse_b / 100.0);
+    
+    // Obtener factores de mercado efectivo según tipo de localidad
+    const factors = EFFECTIVE_MARKET_FACTORS[location.type] || EFFECTIVE_MARKET_FACTORS['Otros'];
+    
+    // Calcular población efectiva aplicando factores por NSE
+    const effectiveHomesD = homesD * factors.d;
+    const effectiveHomesCMinus = homesCMinus * factors.c_minus;
+    const effectiveHomesCPlus = homesCPlus * factors.c_plus;
+    const effectiveHomesB = homesB * factors.b;
+    
+    const effectivePopulation = effectiveHomesD + effectiveHomesCMinus + effectiveHomesCPlus + effectiveHomesB;
+    
+    return {
+        totalPopulation,
+        effectivePopulation,
+        homesD,
+        homesCMinus,
+        homesCPlus,
+        homesB,
+        effectiveHomesD,
+        effectiveHomesCMinus,
+        effectiveHomesCPlus,
+        effectiveHomesB,
+        marketFactors: factors
+    };
+}
+
+/**
  * Calcula la evaluación de una localidad
  * @param {object} location - Objeto localidad
  * @returns {object} Objeto con la evaluación
  */
 export function calculateEvaluation(location) {
-    const population = 
-        location.homes_5min * (location.percent_homes_5 / 100.0) + 
-        location.homes_10min * (location.percent_homes_10 / 100.0);
+    // Calcular población total y efectiva
+    const populationData = calculateEffectivePopulation(location);
     
-    const homesD = population * (location.percent_nse_d / 100.0);
-    const homesCMinus = population * (location.percent_nse_c_minus / 100.0);
-    const homesCPlus = population * (location.percent_nse_c_plus / 100.0);
-    const homesB = population * (location.percent_nse_b / 100.0);
-    
+    // Usar población efectiva para los cálculos de gastos
     const expensesPercent = location.percent_expenses / 100.0;
-    const avgExpensesD = homesD * location.income_d * expensesPercent;
-    const avgExpensesCMinus = homesCMinus * location.income_c_minus * expensesPercent;
-    const avgExpensesCPlus = homesCPlus * location.income_c_plus * expensesPercent;
-    const avgExpensesB = homesB * location.income_b * expensesPercent;
+    const avgExpensesD = populationData.effectiveHomesD * location.income_d * expensesPercent;
+    const avgExpensesCMinus = populationData.effectiveHomesCMinus * location.income_c_minus * expensesPercent;
+    const avgExpensesCPlus = populationData.effectiveHomesCPlus * location.income_c_plus * expensesPercent;
+    const avgExpensesB = populationData.effectiveHomesB * location.income_b * expensesPercent;
     
     const totalExpenses = avgExpensesD + avgExpensesCMinus + avgExpensesCPlus + avgExpensesB;
     
     return {
-        population,
-        homesD,
-        homesCMinus,
-        homesCPlus,
-        homesB,
+        // Población
+        population: populationData.totalPopulation,
+        effectivePopulation: populationData.effectivePopulation,
+        marketFactors: populationData.marketFactors,
+        
+        // Hogares totales por NSE
+        homesD: populationData.homesD,
+        homesCMinus: populationData.homesCMinus,
+        homesCPlus: populationData.homesCPlus,
+        homesB: populationData.homesB,
+        
+        // Hogares efectivos por NSE
+        effectiveHomesD: populationData.effectiveHomesD,
+        effectiveHomesCMinus: populationData.effectiveHomesCMinus,
+        effectiveHomesCPlus: populationData.effectiveHomesCPlus,
+        effectiveHomesB: populationData.effectiveHomesB,
+        
+        // Gastos promedio
         avgExpensesD,
         avgExpensesCMinus,
         avgExpensesCPlus,

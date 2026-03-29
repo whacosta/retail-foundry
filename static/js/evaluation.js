@@ -321,7 +321,18 @@ function renderEvaluation() {
                 </div>
                 <div class="info-item">
                     <span class="label">Ubicación:</span>
-                    <span class="value">${currentLocation.latitude}, ${currentLocation.longitude}</span>
+                    <span class="value">
+                        <a href="https://www.google.com/maps?q=${currentLocation.latitude},${currentLocation.longitude}" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="location-link">
+                            📍 ${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}
+                        </a>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Población Total:</span>
+                    <span class="value">${evaluation.population.toFixed(2)} hogares</span>
                 </div>
                 <div class="info-item">
                     <span class="label">Hogares 5min:</span>
@@ -334,9 +345,17 @@ function renderEvaluation() {
             </div>
         </div>
 
-        <div class="section highlight">
-            <h2>Población Total</h2>
-            <div class="big-number">${evaluation.population.toFixed(2)} hogares</div>
+        <div class="section highlight-primary">
+            <h2>🎯 Población Efectiva (Mercado Objetivo)</h2>
+            <div class="big-number-primary">${evaluation.effectivePopulation.toFixed(2)} hogares</div>
+            <div class="market-factor-info">
+                <small>Factores de mercado para ${currentLocation.type}: 
+                    B=${(evaluation.marketFactors.b * 100).toFixed(0)}%, 
+                    C+=${(evaluation.marketFactors.c_plus * 100).toFixed(0)}%, 
+                    C-=${(evaluation.marketFactors.c_minus * 100).toFixed(0)}%, 
+                    D=${(evaluation.marketFactors.d * 100).toFixed(0)}%
+                </small>
+            </div>
         </div>
 
         <div class="section">
@@ -345,33 +364,37 @@ function renderEvaluation() {
                 <div class="nse-card">
                     <h3>NSE D</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_d}%</div>
-                    <div class="nse-homes">${evaluation.homesD.toFixed(2)} hogares</div>
+                    <div class="nse-homes">${evaluation.homesD.toFixed(2)} hogares totales</div>
+                    <div class="nse-effective">${evaluation.effectiveHomesD.toFixed(2)} hogares efectivos</div>
                     <div class="nse-income">Ingreso: $${currentLocation.income_d.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE C-</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_c_minus}%</div>
-                    <div class="nse-homes">${evaluation.homesCMinus.toFixed(2)} hogares</div>
+                    <div class="nse-homes">${evaluation.homesCMinus.toFixed(2)} hogares totales</div>
+                    <div class="nse-effective">${evaluation.effectiveHomesCMinus.toFixed(2)} hogares efectivos</div>
                     <div class="nse-income">Ingreso: $${currentLocation.income_c_minus.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE C+</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_c_plus}%</div>
-                    <div class="nse-homes">${evaluation.homesCPlus.toFixed(2)} hogares</div>
+                    <div class="nse-homes">${evaluation.homesCPlus.toFixed(2)} hogares totales</div>
+                    <div class="nse-effective">${evaluation.effectiveHomesCPlus.toFixed(2)} hogares efectivos</div>
                     <div class="nse-income">Ingreso: $${currentLocation.income_c_plus.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE B</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_b}%</div>
-                    <div class="nse-homes">${evaluation.homesB.toFixed(2)} hogares</div>
+                    <div class="nse-homes">${evaluation.homesB.toFixed(2)} hogares totales</div>
+                    <div class="nse-effective">${evaluation.effectiveHomesB.toFixed(2)} hogares efectivos</div>
                     <div class="nse-income">Ingreso: $${currentLocation.income_b.toFixed(2)}</div>
                 </div>
             </div>
         </div>
 
         <div class="section">
-            <h2>Gastos Promedio por NSE (${currentLocation.percent_expenses}% de ingresos)</h2>
-            <p class="section-description">Fórmula: Hogares × Ingreso × % Gastos</p>
+            <h2>Gastos Promedio por NSE (${currentLocation.percent_expenses}% de Gastos)</h2>
+            <p class="section-description">Fórmula: Hogares Efectivos × Ingreso × % Gastos</p>
             <div class="expenses-grid">
                 <div class="expense-item">
                     <span class="label">Gastos NSE D:</span>
@@ -435,9 +458,9 @@ function renderEvaluation() {
                                 <th>Tipo</th>
                                 <th>Tamaño (m²)</th>
                                 <th>Proximidad (m)</th>
-                                <th>Impact</th>
+                                <th>Impact (%)</th>
                                 <th>Share (%)</th>
-                                <th>Aporte</th>
+                                <th>Aporte (%)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -448,9 +471,9 @@ function renderEvaluation() {
                                     <td>${comp.type}</td>
                                     <td>${comp.size.toFixed(2)}</td>
                                     <td>${comp.proximity.toFixed(0)}m</td>
-                                    <td>${comp.metrics.impact.toFixed(4)}</td>
+                                    <td>${(comp.metrics.impact * 100).toFixed(2)}%</td>
                                     <td>${comp.metrics.share.toFixed(2)}%</td>
-                                    <td>${comp.metrics.contribution.toFixed(4)}</td>
+                                    <td>${(comp.metrics.contribution * 100).toFixed(2)}%</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button class="btn btn-success btn-sm" onclick="window.editCompetitorHandler(${comp.id})">Editar</button>
