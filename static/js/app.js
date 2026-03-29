@@ -1,6 +1,6 @@
 // App principal para Retail Foundry - SPA Version
 import { COMPETITOR_TYPES } from './constants.js';
-import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById } from './storage.js';
+import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData } from './storage.js';
 
 // Inicializar storage al cargar
 initStorage();
@@ -16,6 +16,9 @@ const modal = document.getElementById('modal');
 const configModal = document.getElementById('configModal');
 const newLocationBtn = document.getElementById('newLocationBtn');
 const configBtn = document.getElementById('configBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFileInput = document.getElementById('importFileInput');
 const closeBtn = document.getElementsByClassName('close')[0];
 const closeConfigBtn = document.getElementsByClassName('close-config')[0];
 const cancelBtn = document.getElementById('cancelBtn');
@@ -36,6 +39,18 @@ newLocationBtn.onclick = () => {
 
 configBtn.onclick = () => {
     openConfigModal();
+};
+
+exportBtn.onclick = () => {
+    handleExportData();
+};
+
+importBtn.onclick = () => {
+    importFileInput.click();
+};
+
+importFileInput.onchange = (event) => {
+    handleImportData(event);
 };
 
 closeBtn.onclick = () => {
@@ -377,6 +392,87 @@ configForm.addEventListener('submit', async (e) => {
         alert('Error al guardar la configuración');
     }
 });
+
+// Funciones de Importación/Exportación
+function handleExportData() {
+    try {
+        const data = exportData();
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        link.download = `retail-foundry-backup-${timestamp}.json`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Datos exportados exitosamente');
+    } catch (error) {
+        console.error('Error al exportar datos:', error);
+        alert('❌ Error al exportar los datos. Por favor, intente nuevamente.');
+    }
+}
+
+function handleImportData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.json')) {
+        alert('❌ Por favor, seleccione un archivo JSON válido.');
+        event.target.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Validar estructura básica
+            if (!data.locations || !data.competitors || !data.cannibalizations || !data.mobilityZones) {
+                throw new Error('Estructura de datos inválida');
+            }
+            
+            // Confirmar con el usuario
+            const confirmMsg = `¿Está seguro de que desea importar estos datos?\n\n` +
+                `Localidades: ${data.locations.length}\n` +
+                `Competidores: ${data.competitors.length}\n` +
+                `Canibalizaciones: ${data.cannibalizations.length}\n` +
+                `Zonas de Movilidad: ${data.mobilityZones.length}\n\n` +
+                `⚠️ ADVERTENCIA: Esto reemplazará todos los datos actuales.`;
+            
+            if (confirm(confirmMsg)) {
+                importData(data);
+                
+                // Recargar datos en la interfaz
+                loadMobilityZones();
+                loadLocations();
+                
+                alert('✅ Datos importados exitosamente');
+            }
+        } catch (error) {
+            console.error('Error al importar datos:', error);
+            alert('❌ Error al importar los datos. Verifique que el archivo sea válido.');
+        }
+        
+        // Limpiar el input
+        event.target.value = '';
+    };
+    
+    reader.onerror = () => {
+        alert('❌ Error al leer el archivo.');
+        event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+}
 
 // Exponer funciones globalmente para onclick handlers
 window.viewEvaluation = viewEvaluation;

@@ -14,10 +14,14 @@
                 <p class="subtitle">Análisis de factibilidad para tiendas de retail</p>
             </div>
             <div class="header-buttons">
+                <button id="exportBtn" class="btn btn-secondary">📥 Exportar Datos</button>
+                <button id="importBtn" class="btn btn-secondary">📤 Importar Datos</button>
                 <button id="configBtn" class="btn btn-secondary">⚙️ Configuración</button>
                 <button id="newLocationBtn" class="btn btn-primary">+ Nueva Localidad</button>
             </div>
         </header>
+
+        <input type="file" id="importFileInput" accept=".json" style="display: none;">
 
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Buscar localidad..." class="search-input">

@@ -24,7 +24,8 @@
 - ✅ **Análisis por nivel socioeconómico** (NSE)
 - ✅ **Cálculos en tiempo real** con visualización de fórmulas
 - ✅ **Compatible con GitHub Pages**
-- ✅ **Exportar/Importar datos** en formato JSON
+- ✅ **Exportar/Importar datos** - Backup y restauración con un click
+- ✅ **Validación de datos** - Verificación automática al importar
 
 ## 📋 Requisitos
 
@@ -156,28 +157,51 @@ Los datos se guardan automáticamente en **localStorage** del navegador:
 - Canibalizaciones
 - Zonas de movilidad
 
-### Exportar Datos
+### 📥 Exportar Datos (Nuevo)
 
-Abre la consola del navegador (F12) y ejecuta:
+Puedes exportar todos tus datos con un solo click:
+
+1. Click en el botón **"📥 Exportar Datos"** en el header
+2. Se descargará automáticamente un archivo JSON con formato:
+   - `retail-foundry-backup-YYYY-MM-DD.json`
+3. El archivo incluye:
+   - ✅ Todas las localidades
+   - ✅ Todos los competidores
+   - ✅ Todas las canibalizaciones
+   - ✅ Configuración de zonas de movilidad
+
+**Uso recomendado:**
+- Hacer backups periódicos de tus datos
+- Transferir datos entre dispositivos
+- Compartir datos con otros usuarios
+
+### 📤 Importar Datos (Nuevo)
+
+Puedes importar datos desde un archivo JSON exportado previamente:
+
+1. Click en el botón **"📤 Importar Datos"** en el header
+2. Selecciona un archivo JSON válido
+3. Revisa el resumen de datos a importar
+4. Confirma la importación
+
+**⚠️ IMPORTANTE:**
+- La importación **reemplazará todos los datos actuales**
+- Se recomienda exportar tus datos actuales antes de importar
+- El archivo debe ser un JSON válido exportado por la aplicación
+
+### Exportar/Importar desde Consola (Avanzado)
+
+También puedes usar la consola del navegador (F12):
 
 ```javascript
 // Exportar todos los datos
 const data = exportData();
 console.log(JSON.stringify(data));
-// Copiar el JSON para hacer backup
-```
 
-### Importar Datos
-
-```javascript
 // Importar datos desde JSON
 const data = { /* tu JSON aquí */ };
 importData(data);
-```
 
-### Limpiar Datos
-
-```javascript
 // Limpiar todos los datos (cuidado!)
 clearAllData();
 ```
