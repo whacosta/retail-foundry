@@ -52,14 +52,15 @@ export function calculateAffinity(locationType, locationSize, competitorType, co
 /**
  * Calcula la Proximidad basada en la distancia
  * Proximidad inversa: mientras más cerca, mayor proximidad
+ * Fórmula: Proximity = 1 / (1 + distance / 300)
  * @param {number} distance - Distancia en metros
  * @returns {number} Valor de proximidad normalizado entre 0 y 1
  */
 export function calculateProximity(distance) {
     if (distance <= 0) return 1;
-    // Normalización: 1 / (1 + distance/1000)
-    // A 0m = 1, a 500m ≈ 0.67, a 1000m = 0.5
-    return 1 / (1 + distance / 1000);
+    // Normalización: 1 / (1 + distance/300)
+    // A 0m = 1, a 150m ≈ 0.67, a 300m = 0.5
+    return 1 / (1 + distance / 300);
 }
 
 /**
@@ -75,29 +76,12 @@ export function calculateImpact(affinity, proximity) {
 
 /**
  * Calcula el nivel de competencia (CompetitionLevel)
- * @param {number} totalCompetitors - Número total de competidores
- * @param {number} distance - Distancia del competidor en metros
- * @returns {number} Nivel de competencia entre 0 y 1
+ * Ahora es la suma de todos los impacts
+ * @param {Array} impacts - Array de valores de impact de todos los competidores
+ * @returns {number} Suma total de impacts
  */
-export function calculateCompetitionLevel(totalCompetitors, distance) {
-    let range;
-    
-    if (totalCompetitors <= COMPETITION_LEVEL_RANGES.low.maxCompetitors) {
-        range = COMPETITION_LEVEL_RANGES.low;
-    } else if (totalCompetitors <= COMPETITION_LEVEL_RANGES.medium.maxCompetitors) {
-        range = COMPETITION_LEVEL_RANGES.medium;
-    } else {
-        range = COMPETITION_LEVEL_RANGES.high;
-    }
-    
-    // Interpolar según distancia
-    if (distance <= DISTANCE_THRESHOLDS.close) {
-        return range.max;
-    } else if (distance <= DISTANCE_THRESHOLDS.medium) {
-        return (range.min + range.max) / 2;
-    } else {
-        return range.min;
-    }
+export function calculateCompetitionLevel(impacts) {
+    return impacts.reduce((sum, impact) => sum + impact, 0);
 }
 
 /**
@@ -110,15 +94,24 @@ export function calculateAccessibility(competitorType) {
 }
 
 /**
+ * Calcula la normalización de competencia (CompetitionNorm)
+ * Fórmula: competitionNorm = 1 - e^(-CompetitionLevel)
+ * @param {number} competitionLevel - Nivel de competencia (suma de impacts)
+ * @returns {number} Valor normalizado de competencia
+ */
+export function calculateCompetitionNorm(competitionLevel) {
+    return 1 - Math.exp(-competitionLevel);
+}
+
+/**
  * Calcula el Score
- * Fórmula: Score = (CompetitionLevel + Accessibility + Affinity) / 3
- * @param {number} competitionLevel - Nivel de competencia
+ * Fórmula: Score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)
  * @param {number} accessibility - Accesibilidad
- * @param {number} affinity - Afinidad
+ * @param {number} competitionNorm - Normalización de competencia
  * @returns {number} Score normalizado
  */
-export function calculateScore(competitionLevel, accessibility, affinity) {
-    return (competitionLevel + accessibility + affinity) / 3;
+export function calculateScore(accessibility, competitionNorm) {
+    return 0.6 * accessibility + 0.4 * (1 - competitionNorm);
 }
 
 /**
@@ -166,24 +159,16 @@ export function calculateContribution(impact, share) {
  * @param {object} competitor - Objeto competidor con todos sus datos
  * @param {object} location - Objeto localidad
  * @param {object} zone - Zona de movilidad
- * @param {number} totalCompetitors - Total de competidores
- * @returns {object} Objeto con todos los cálculos
+ * @returns {object} Objeto con todos los cálculos individuales del competidor
  */
-export function calculateCompetitorMetrics(competitor, location, zone, totalCompetitors) {
-    // Calcular componentes
+export function calculateCompetitorMetrics(competitor, location, zone) {
+    // Calcular componentes individuales
     const typeSimilarity = calculateTypeSimilarity(location.type, competitor.type);
     const sizeSimilarity = calculateSizeSimilarity(location.size, competitor.size);
     const affinity = calculateAffinity(location.type, location.size, competitor.type, competitor.size);
     const proximity = calculateProximity(competitor.proximity);
     const impact = calculateImpact(affinity, proximity);
-    
-    const competitionLevel = calculateCompetitionLevel(totalCompetitors, competitor.proximity);
     const accessibility = calculateAccessibility(competitor.type);
-    const score = calculateScore(competitionLevel, accessibility, affinity);
-    
-    const captureRange = getCaptureRange(competitor.type, zone.name);
-    const share = calculateShare(score, captureRange);
-    const contribution = calculateContribution(impact, share);
     
     return {
         typeSimilarity,
@@ -191,12 +176,7 @@ export function calculateCompetitorMetrics(competitor, location, zone, totalComp
         affinity,
         proximity,
         impact,
-        competitionLevel,
-        accessibility,
-        score,
-        captureRange,
-        share,
-        contribution
+        accessibility
     };
 }
 
@@ -286,6 +266,18 @@ export function calculateEvaluation(location) {
         avgExpensesB,
         totalExpenses
     };
+}
+
+/**
+ * Calcula el monto del ajuste por competencia
+ * Fórmula: competitionAdjustmentAmount = totalExpenses × (1 - competitionNorm) × share
+ * @param {number} totalExpenses - Gastos totales estimados
+ * @param {number} competitionNorm - Normalización de competencia
+ * @param {number} share - Participación (en decimal, no porcentaje)
+ * @returns {number} Monto del ajuste
+ */
+export function calculateCompetitionAdjustmentAmount(totalExpenses, competitionNorm, share) {
+    return totalExpenses * (1 - competitionNorm) * share;
 }
 
 /**

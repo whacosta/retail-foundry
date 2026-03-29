@@ -52,29 +52,29 @@ export const TYPE_AFFINITY_MATRIX = {
 // Rangos de captura de canal por tipo de competidor y zona
 export const CAPTURE_RANGES = {
     'Supermercado': {
-        'popular': { min: 8.0, max: 12.0 },
-        'media': { min: 10.0, max: 15.0 },
-        'alta': { min: 12.0, max: 18.0 }
+        'popular': { min: 15.0, max: 22.0 },
+        'media': { min: 22.0, max: 30.0 },
+        'alta': { min: 30.0, max: 40.0 }
     },
     'Discounters': {
-        'popular': { min: 5.0, max: 8.0 },
-        'media': { min: 6.0, max: 10.0 },
-        'alta': { min: 3.0, max: 6.0 }
-    },
-    'Tradicional': {
-        'popular': { min: 15.0, max: 25.0 },
-        'media': { min: 10.0, max: 18.0 },
+        'popular': { min: 20.0, max: 30.0 },
+        'media': { min: 12.0, max: 20.0 },
         'alta': { min: 5.0, max: 10.0 }
     },
+    'Tradicional': {
+        'popular': { min: 25.0, max: 40.0 },
+        'media': { min: 15.0, max: 25.0 },
+        'alta': { min: 5.0, max: 12.0 }
+    },
     'Especializados': {
-        'popular': { min: 3.0, max: 6.0 },
-        'media': { min: 4.0, max: 8.0 },
-        'alta': { min: 2.0, max: 5.0 }
+        'popular': { min: 5.0, max: 10.0 },
+        'media': { min: 8.0, max: 15.0 },
+        'alta': { min: 15.0, max: 25.0 }
     },
     'Otros': {
-        'popular': { min: 2.0, max: 4.0 },
-        'media': { min: 3.0, max: 5.0 },
-        'alta': { min: 4.0, max: 7.0 }
+        'popular': { min: 2.0, max: 5.0 },
+        'media': { min: 2.0, max: 5.0 },
+        'alta': { min: 3.0, max: 6.0 }
     }
 };
 

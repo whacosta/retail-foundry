@@ -75,18 +75,30 @@ La aplicación calcula la **Población Efectiva** (mercado objetivo real) basán
 | `Weight` | `Impact` | Impacto calculado |
 | `ChannelCapture` | `Share` | Participación del canal |
 
-### Nuevas Fórmulas de Cálculo
+### Fórmulas de Cálculo (Actualizadas)
+
+#### Métricas Individuales por Competidor
 
 ```
-Similarity(type) = Valor de matriz de afinidad
+Similarity(type) = Valor de matriz de afinidad (TYPE_AFFINITY_MATRIX)
 Similarity(size) = MIN(1, (Competitor.size / Location.size)^0.5)
 Affinity = Similarity(type) × Similarity(size)
-Proximity = 1 / (1 + distance/1000)
+Proximity = 1 / (1 + distance / 300)
 Impact = Affinity × Proximity
-Score = (CompetitionLevel + Accessibility + Affinity) / 3
-Share = CaptureMin + (CaptureMax - CaptureMin) × Score
-Aporte = Impact × Share
+Accessibility = Valor según tipo de competidor (ACCESSIBILITY_VALUES)
 ```
+
+#### Métricas Globales de Competencia
+
+```
+CompetitionLevel = SUM(impacts de todos los competidores)
+CompetitionNorm = 1 - e^(-CompetitionLevel)
+Score = 0.6 × avgAccessibility + 0.4 × (1 - CompetitionNorm)
+Share = min + (max - min) × Score
+CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
+```
+
+**Nota importante:** Las métricas Score y Share ahora se calculan globalmente (una sola vez para toda la localidad), no por cada competidor individual.
 
 ### Matriz de Afinidad por Tipo
 
@@ -267,6 +279,12 @@ La aplicación está lista para GitHub Pages:
 (Hogares 5min × % Hogares 5) + (Hogares 10min × % Hogares 10)
 ```
 
+### Población Efectiva por NSE
+```
+Población NSE × Factor de Mercado Efectivo (según tipo de localidad)
+```
+Ver tabla de factores en sección "Factores de Mercado Efectivo"
+
 ### Hogares por NSE
 ```
 Población × (% NSE / 100)
@@ -274,17 +292,22 @@ Población × (% NSE / 100)
 
 ### Gastos Promedio por NSE
 ```
-Hogares NSE × Ingresos NSE × (% Gastos / 100)
+Hogares Efectivos NSE × Ingresos NSE × (% Gastos / 100)
 ```
 
 ### Gastos Totales
 ```
-Suma de gastos de todos los NSE
+Suma de gastos de todos los NSE (usando población efectiva)
 ```
 
 ### Ajuste por Competencia
 ```
-Suma de aportes de todos los competidores
+CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
+```
+
+### Ajuste por Canibalización
+```
+CannibalizationAdjustment = totalExpenses × (% canibalización / 100)
 ```
 
 ### Gastos Ajustados Finales
@@ -296,6 +319,83 @@ Gastos Totales - Ajuste Competencia - Ajuste Canibalización
 - **No Viable**: < $160,000
 - **Viable**: $160,000 - $180,000
 - **Óptimo**: ≥ $180,000
+
+## 📚 Constantes y Configuración
+
+Todas las constantes de la aplicación están definidas en `static/js/constants.js`:
+
+### COMPETITOR_TYPES
+Tipos de competidores/localidades disponibles:
+- Supermercado
+- Discounters
+- Tradicional
+- Especializados
+- Otros
+
+### TYPE_AFFINITY_MATRIX
+Matriz de afinidad entre tipos (ver tabla en sección "Matriz de Afinidad por Tipo")
+
+### CAPTURE_RANGES
+Rangos de captura de canal (min-max %) por tipo de competidor y zona de movilidad:
+
+| Tipo | Zona Popular | Zona Media | Zona Alta |
+|------|--------------|------------|----------|
+| Supermercado | 15-22% | 22-30% | 30-40% |
+| Discounters | 20-30% | 12-20% | 5-10% |
+| Tradicional | 25-40% | 15-25% | 5-12% |
+| Especializados | 5-10% | 8-15% | 15-25% |
+| Otros | 2-5% | 2-5% | 3-6% |
+
+### ACCESSIBILITY_VALUES
+Valores de accesibilidad por tipo de competidor:
+- Supermercado: 0.9
+- Discounters: 0.6
+- Tradicional: 0.6
+- Especializados: 0.3
+- Otros: 0.3
+
+### VIABILITY_CRITERIA
+- Mínimo viable: $160,000
+- Óptimo: $180,000
+
+### DEFAULT_NSE_INCOME
+Ingresos por defecto por NSE:
+- NSE D: $460
+- NSE C-: $803
+- NSE C+: $2,100
+- NSE B: $4,013
+
+### EFFECTIVE_MARKET_FACTORS
+Factores de mercado efectivo por NSE y tipo de localidad (ver tabla en sección "Factores de Mercado Efectivo")
+
+### DEFAULT_MOBILITY_ZONES
+Tres zonas de movilidad predefinidas:
+- Zona popular (80% hogares 5min, 20% hogares 10min)
+- Zona media (60% hogares 5min, 40% hogares 10min)
+- Zona alta (50% hogares 5min, 55% hogares 10min)
+
+### STORAGE_KEYS
+Claves de localStorage:
+- `rf_locations`: Localidades
+- `rf_competitors`: Competidores
+- `rf_cannibalizations`: Canibalizaciones
+- `rf_mobility_zones`: Zonas de movilidad
+- `rf_global_config`: Configuración global
+
+## 📤 Exportación de Resultados
+
+La aplicación permite exportar los resultados completos de evaluación en formato JSON:
+
+1. Click en "📊 Exportar Resultados" en la página de evaluación
+2. Se descarga un archivo JSON con:
+   - Metadata (fecha, localidad, versión)
+   - Datos completos de la localidad
+   - Análisis de población y gastos
+   - Análisis de competencia (competidores, métricas, fórmulas, cálculos)
+   - Análisis de canibalización
+   - Resultados finales y viabilidad
+
+**Uso:** El JSON exportado contiene información suficiente para que una IA pueda verificar la exactitud de todos los cálculos.
 
 ## 🗂️ Archivos Obsoletos
 

@@ -15,7 +15,13 @@ import {
 import { 
     calculateEvaluation, 
     calculateViability,
-    calculateCompetitorMetrics
+    calculateCompetitorMetrics,
+    calculateCompetitionLevel,
+    calculateCompetitionNorm,
+    calculateScore,
+    getCaptureRange,
+    calculateShare,
+    calculateCompetitionAdjustmentAmount
 } from './calculations.js';
 
 // Get location ID from URL
@@ -119,18 +125,14 @@ function updateCalculations() {
         proximity
     };
     
-    const metrics = calculateCompetitorMetrics(tempCompetitor, currentLocation, currentZone, competitors.length + 1);
+    const metrics = calculateCompetitorMetrics(tempCompetitor, currentLocation, currentZone);
     
     document.getElementById('calcTypeSimilarity').textContent = metrics.typeSimilarity.toFixed(4);
     document.getElementById('calcSizeSimilarity').textContent = metrics.sizeSimilarity.toFixed(4);
     document.getElementById('calcAffinity').textContent = metrics.affinity.toFixed(4);
     document.getElementById('calcProximity').textContent = metrics.proximity.toFixed(4);
     document.getElementById('calcImpact').textContent = metrics.impact.toFixed(4);
-    document.getElementById('calcCompetitionLevel').textContent = metrics.competitionLevel.toFixed(4);
     document.getElementById('calcAccessibility').textContent = metrics.accessibility.toFixed(4);
-    document.getElementById('calcScore').textContent = metrics.score.toFixed(4);
-    document.getElementById('calcShare').textContent = metrics.share.toFixed(2) + '%';
-    document.getElementById('calcContribution').textContent = metrics.contribution.toFixed(4);
     
     document.getElementById('calculationResults').style.display = 'block';
 }
@@ -283,14 +285,40 @@ function renderEvaluation() {
     
     // Calculate competitors with metrics
     const competitorsWithMetrics = competitors.map(comp => {
-        const metrics = calculateCompetitorMetrics(comp, currentLocation, currentZone, competitors.length);
+        const metrics = calculateCompetitorMetrics(comp, currentLocation, currentZone);
         return { ...comp, metrics };
     });
     
-    // Calculate competition adjustment
-    const totalContribution = competitorsWithMetrics.reduce((sum, comp) => sum + comp.metrics.contribution, 0);
-    const competitionAdjustment = totalContribution;
-    const competitionAdjustmentAmount = evaluation.totalExpenses * (competitionAdjustment / 100);
+    // Calculate global competition metrics
+    const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
+    const competitionLevel = calculateCompetitionLevel(allImpacts);
+    const competitionNorm = calculateCompetitionNorm(competitionLevel);
+    
+    // Calculate global accessibility (promedio de todos los competidores)
+    const avgAccessibility = competitorsWithMetrics.length > 0
+        ? competitorsWithMetrics.reduce((sum, comp) => sum + comp.metrics.accessibility, 0) / competitorsWithMetrics.length
+        : 0;
+    
+    // Calculate global score
+    const score = calculateScore(avgAccessibility, competitionNorm);
+    
+    // Get capture range (usando promedio ponderado por accessibility o valores por defecto)
+    let captureRange = { min: 0, max: 0 };
+    if (competitorsWithMetrics.length > 0) {
+        // Usar el tipo del competidor con mayor accessibility como referencia
+        const sortedByAccessibility = [...competitorsWithMetrics].sort((a, b) => b.metrics.accessibility - a.metrics.accessibility);
+        captureRange = getCaptureRange(sortedByAccessibility[0].type, currentZone.name);
+    }
+    
+    // Calculate global share
+    const share = calculateShare(score, captureRange);
+    
+    // Calculate competition adjustment amount usando la nueva fórmula
+    const competitionAdjustmentAmount = calculateCompetitionAdjustmentAmount(
+        evaluation.totalExpenses,
+        competitionNorm,
+        share / 100  // Convertir de porcentaje a decimal
+    );
     
     // Calculate cannibalization adjustment
     const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
@@ -457,10 +485,10 @@ function renderEvaluation() {
                                 <th>Nombre</th>
                                 <th>Tipo</th>
                                 <th>Tamaño (m²)</th>
-                                <th>Proximidad (m)</th>
+                                <th>Proximidad (%)</th>
+                                <th>Afinidad (%)</th>
+                                <th>Accesibilidad (%)</th>
                                 <th>Impact (%)</th>
-                                <th>Share (%)</th>
-                                <th>Aporte (%)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -470,10 +498,10 @@ function renderEvaluation() {
                                     <td>${comp.name}</td>
                                     <td>${comp.type}</td>
                                     <td>${comp.size.toFixed(2)}</td>
-                                    <td>${comp.proximity.toFixed(0)}m</td>
+                                    <td>${(comp.metrics.proximity * 100).toFixed(2)}%</td>
+                                    <td>${(comp.metrics.affinity * 100).toFixed(2)}%</td>
+                                    <td>${(comp.metrics.accessibility * 100).toFixed(2)}%</td>
                                     <td>${(comp.metrics.impact * 100).toFixed(2)}%</td>
-                                    <td>${comp.metrics.share.toFixed(2)}%</td>
-                                    <td>${(comp.metrics.contribution * 100).toFixed(2)}%</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button class="btn btn-success btn-sm" onclick="window.editCompetitorHandler(${comp.id})">Editar</button>
@@ -492,12 +520,28 @@ function renderEvaluation() {
 
                 <div class="adjustment-summary">
                     <div class="adjustment-item">
-                        <span class="label">Ajuste Total:</span>
-                        <span class="value" id="totalAdjustment">${competitionAdjustment.toFixed(2)}%</span>
+                        <div>
+                            <span class="label">Score:</span>
+                            <span class="value">${(score * 100).toFixed(2)}%</span>
+                        </div>
+                        <small class="formula-description">Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</small>
+                        <small class="formula-description">score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</small>
                     </div>
                     <div class="adjustment-item">
-                        <span class="label">Monto del Ajuste:</span>
-                        <span class="value adjustment-amount" id="adjustmentAmount">-$${competitionAdjustmentAmount.toFixed(2)}</span>
+                        <div>
+                            <span class="label">Share:</span>
+                            <span class="value">${share.toFixed(2)}%</span>
+                        </div>
+                        <small class="formula-description">Formula: share = min + (max - min) × score</small>
+                        <small class="formula-description">share = ${captureRange.min.toFixed(2)}% + (${captureRange.max.toFixed(2)}% - ${captureRange.min.toFixed(2)}%) × ${score.toFixed(4)} = ${share.toFixed(2)}%</small>
+                    </div>
+                    <div class="adjustment-item">
+                        <div>
+                            <span class="label">Monto del Ajuste:</span>
+                            <span class="value adjustment-amount" id="adjustmentAmount">-$${competitionAdjustmentAmount.toFixed(2)}</span>
+                        </div>
+                        <small class="formula-description">Formula: competitionAdjustmentAmount = totalExpenses × (1 - competitionNorm) × share</small>
+                        <small class="formula-description">competitionAdjustmentAmount = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share/100).toFixed(4)} = $${competitionAdjustmentAmount.toFixed(2)}</small>
                     </div>
                 </div>
             </div>
@@ -539,12 +583,16 @@ function renderEvaluation() {
 
                 <div class="adjustment-summary">
                     <div class="adjustment-item">
-                        <span class="label">Ajuste Total:</span>
-                        <span class="value" id="totalCannAdjustment">${cannibalizationAdjustment.toFixed(2)}%</span>
+                        <div>
+                            <span class="label">Ajuste Total:</span>
+                            <span class="value" id="totalCannAdjustment">${cannibalizationAdjustment.toFixed(2)}%</span>
+                        </div>
                     </div>
                     <div class="adjustment-item">
-                        <span class="label">Monto del Ajuste:</span>
-                        <span class="value adjustment-amount" id="cannAdjustmentAmount">-$${cannibalizationAdjustmentAmount.toFixed(2)}</span>
+                        <div>
+                            <span class="label">Monto del Ajuste:</span>
+                            <span class="value adjustment-amount" id="cannAdjustmentAmount">-$${cannibalizationAdjustmentAmount.toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -577,5 +625,215 @@ window.deleteCompetitorHandler = deleteCompetitorHandler;
 window.editCannibalizationHandler = editCannibalizationHandler;
 window.deleteCannibalizationHandler = deleteCannibalizationHandler;
 
+// Export evaluation results
+function exportEvaluationResults() {
+    const evaluation = calculateEvaluation(currentLocation);
+    
+    // Calculate competitors with metrics
+    const competitorsWithMetrics = competitors.map(comp => {
+        const metrics = calculateCompetitorMetrics(comp, currentLocation, currentZone);
+        return { 
+            id: comp.id,
+            name: comp.name,
+            type: comp.type,
+            size: comp.size,
+            proximity: comp.proximity,
+            metrics: {
+                typeSimilarity: metrics.typeSimilarity,
+                sizeSimilarity: metrics.sizeSimilarity,
+                affinity: metrics.affinity,
+                proximity: metrics.proximity,
+                impact: metrics.impact,
+                accessibility: metrics.accessibility
+            }
+        };
+    });
+    
+    // Calculate global competition metrics
+    const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
+    const competitionLevel = calculateCompetitionLevel(allImpacts);
+    const competitionNorm = calculateCompetitionNorm(competitionLevel);
+    
+    // Calculate global accessibility
+    const avgAccessibility = competitorsWithMetrics.length > 0
+        ? competitorsWithMetrics.reduce((sum, comp) => sum + comp.metrics.accessibility, 0) / competitorsWithMetrics.length
+        : 0;
+    
+    // Calculate global score
+    const score = calculateScore(avgAccessibility, competitionNorm);
+    
+    // Get capture range
+    let captureRange = { min: 0, max: 0 };
+    if (competitorsWithMetrics.length > 0) {
+        const sortedByAccessibility = [...competitorsWithMetrics].sort((a, b) => b.metrics.accessibility - a.metrics.accessibility);
+        captureRange = getCaptureRange(sortedByAccessibility[0].type, currentZone.name);
+    }
+    
+    // Calculate global share
+    const share = calculateShare(score, captureRange);
+    
+    // Calculate competition adjustment amount
+    const competitionAdjustmentAmount = calculateCompetitionAdjustmentAmount(
+        evaluation.totalExpenses,
+        competitionNorm,
+        share / 100
+    );
+    
+    // Calculate cannibalization adjustment
+    const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
+    const cannibalizationAdjustmentAmount = evaluation.totalExpenses * (cannibalizationAdjustment / 100);
+    
+    // Calculate final adjusted expenses
+    const expensesAfterCompetition = evaluation.totalExpenses - competitionAdjustmentAmount;
+    const finalAdjustedExpenses = expensesAfterCompetition - cannibalizationAdjustmentAmount;
+    
+    const viability = calculateViability(finalAdjustedExpenses);
+    
+    // Build complete evaluation export
+    const exportData = {
+        metadata: {
+            exportDate: new Date().toISOString(),
+            locationId: locationId,
+            locationName: currentLocation.name,
+            version: "1.0"
+        },
+        location: {
+            id: currentLocation.id,
+            name: currentLocation.name,
+            type: currentLocation.type,
+            size: currentLocation.size,
+            coordinates: {
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude
+            },
+            mobilityZone: {
+                id: currentZone.id,
+                name: currentZone.name,
+                percentHomes5: currentZone.percent_homes_5,
+                percentHomes10: currentZone.percent_homes_10,
+                percentExpenses: currentZone.percent_expenses
+            },
+            demographics: {
+                homes5min: currentLocation.homes_5min,
+                percentHomes5: currentLocation.percent_homes_5,
+                homes10min: currentLocation.homes_10min,
+                percentHomes10: currentLocation.percent_homes_10,
+                nse: {
+                    percentD: currentLocation.percent_nse_d,
+                    percentCMinus: currentLocation.percent_nse_c_minus,
+                    percentCPlus: currentLocation.percent_nse_c_plus,
+                    percentB: currentLocation.percent_nse_b
+                },
+                income: {
+                    incomeD: currentLocation.income_d,
+                    incomeCMinus: currentLocation.income_c_minus,
+                    incomeCPlus: currentLocation.income_c_plus,
+                    incomeB: currentLocation.income_b
+                },
+                percentExpenses: currentLocation.percent_expenses
+            }
+        },
+        populationAnalysis: {
+            totalPopulation: evaluation.population,
+            effectivePopulation: evaluation.effectivePopulation,
+            marketFactors: evaluation.marketFactors,
+            homesByNSE: {
+                total: {
+                    d: evaluation.homesD,
+                    cMinus: evaluation.homesCMinus,
+                    cPlus: evaluation.homesCPlus,
+                    b: evaluation.homesB
+                },
+                effective: {
+                    d: evaluation.effectiveHomesD,
+                    cMinus: evaluation.effectiveHomesCMinus,
+                    cPlus: evaluation.effectiveHomesCPlus,
+                    b: evaluation.effectiveHomesB
+                }
+            }
+        },
+        expensesAnalysis: {
+            byNSE: {
+                d: evaluation.avgExpensesD,
+                cMinus: evaluation.avgExpensesCMinus,
+                cPlus: evaluation.avgExpensesCPlus,
+                b: evaluation.avgExpensesB
+            },
+            totalExpenses: evaluation.totalExpenses
+        },
+        competitionAnalysis: {
+            competitors: competitorsWithMetrics,
+            totalCompetitors: competitorsWithMetrics.length,
+            globalMetrics: {
+                allImpacts: allImpacts,
+                competitionLevel: competitionLevel,
+                competitionNorm: competitionNorm,
+                avgAccessibility: avgAccessibility,
+                score: score,
+                captureRange: captureRange,
+                share: share
+            },
+            formulas: {
+                competitionLevel: "SUM(impacts)",
+                competitionNorm: "1 - e^(-competitionLevel)",
+                score: "0.6 × accessibility + 0.4 × (1 - competitionNorm)",
+                share: "min + (max - min) × score",
+                competitionAdjustmentAmount: "totalExpenses × (1 - competitionNorm) × share"
+            },
+            calculations: {
+                competitionLevelCalc: `SUM([${allImpacts.join(', ')}]) = ${competitionLevel}`,
+                competitionNormCalc: `1 - e^(-${competitionLevel}) = ${competitionNorm}`,
+                scoreCalc: `0.6 × ${avgAccessibility} + 0.4 × (1 - ${competitionNorm}) = ${score}`,
+                shareCalc: `${captureRange.min} + (${captureRange.max} - ${captureRange.min}) × ${score} = ${share}`,
+                competitionAdjustmentAmountCalc: `${evaluation.totalExpenses} × (1 - ${competitionNorm}) × ${share / 100} = ${competitionAdjustmentAmount}`
+            },
+            adjustment: {
+                amount: competitionAdjustmentAmount,
+                percentage: (competitionAdjustmentAmount / evaluation.totalExpenses) * 100
+            }
+        },
+        cannibalizationAnalysis: {
+            cannibalizations: cannibalizations,
+            totalCannibalization: cannibalizationAdjustment,
+            adjustment: {
+                amount: cannibalizationAdjustmentAmount,
+                percentage: cannibalizationAdjustment
+            }
+        },
+        finalResults: {
+            totalExpenses: evaluation.totalExpenses,
+            competitionAdjustment: competitionAdjustmentAmount,
+            expensesAfterCompetition: expensesAfterCompetition,
+            cannibalizationAdjustment: cannibalizationAdjustmentAmount,
+            finalAdjustedExpenses: finalAdjustedExpenses,
+            viability: {
+                isViable: viability.isViable,
+                status: viability.status,
+                criteria: {
+                    minViable: 160000,
+                    optimal: 180000
+                }
+            }
+        }
+    };
+    
+    // Create and download JSON file
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `evaluacion-${currentLocation.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Resultados de evaluación exportados exitosamente');
+}
+
 // Initialize on load
 init();
+
+// Setup export button
+document.getElementById('exportEvaluationBtn').addEventListener('click', exportEvaluationResults);

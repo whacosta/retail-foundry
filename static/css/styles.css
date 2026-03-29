@@ -405,6 +405,17 @@ select:focus {
 
 .adjustment-item {
     display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.adjustment-item:last-child {
+    margin-bottom: 0;
+}
+
+.adjustment-item > div {
+    display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 1.1em;
@@ -435,6 +446,17 @@ select:focus {
 
 .adjustment-item .value.adjustment-amount {
     color: #dc3545;
+}
+
+.adjustment-item .formula-description {
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 4px;
+    border-left: 2px solid #667eea;
 }
 
 .big-number.adjusted {

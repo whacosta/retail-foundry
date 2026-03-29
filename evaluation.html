@@ -10,7 +10,10 @@
     <div class="container">
         <header>
             <h1>Evaluación Completa</h1>
-            <a href="index.html" class="btn btn-secondary">← Volver al inicio</a>
+            <div class="header-buttons">
+                <button id="exportEvaluationBtn" class="btn btn-info">📊 Exportar Resultados</button>
+                <a href="index.html" class="btn btn-secondary">← Volver al inicio</a>
+            </div>
         </header>
 
         <div class="evaluation-container" id="evaluationContainer">
@@ -70,7 +73,7 @@
                         <div class="calc-item">
                             <label>Proximity:</label>
                             <span id="calcProximity">-</span>
-                            <small>1 / (1 + distance/1000)</small>
+                            <small>1 / (1 + distance/300)</small>
                         </div>
                         <div class="calc-item">
                             <label>Impact:</label>
@@ -78,29 +81,9 @@
                             <small>Affinity × Proximity</small>
                         </div>
                         <div class="calc-item">
-                            <label>Competition Level:</label>
-                            <span id="calcCompetitionLevel">-</span>
-                            <small>Basado en total competidores y distancia</small>
-                        </div>
-                        <div class="calc-item">
                             <label>Accessibility:</label>
                             <span id="calcAccessibility">-</span>
                             <small>Según tipo de competidor</small>
-                        </div>
-                        <div class="calc-item">
-                            <label>Score:</label>
-                            <span id="calcScore">-</span>
-                            <small>(CompLevel + Accessibility + Affinity) / 3</small>
-                        </div>
-                        <div class="calc-item">
-                            <label>Share (%):</label>
-                            <span id="calcShare">-</span>
-                            <small>CaptureMin + (CaptureMax - CaptureMin) × Score</small>
-                        </div>
-                        <div class="calc-item">
-                            <label>Aporte:</label>
-                            <span id="calcContribution">-</span>
-                            <small>Impact × Share</small>
                         </div>
                     </div>
                 </div>
