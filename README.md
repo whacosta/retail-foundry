@@ -305,15 +305,20 @@ Suma de gastos de todos los NSE (usando población efectiva)
 CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
 ```
 
-### Ajuste por Canibalización
+### Cálculo de Gastos Ajustados (Paso a Paso)
+
 ```
-CannibalizationAdjustment = totalExpenses × (% canibalización / 100)
+1. Gastos después de Competencia:
+   expensesAfterCompetition = totalExpenses × (1 - competitionNorm)
+
+2. Gastos Ajustados por Share:
+   totalAdjustedExpenses = expensesAfterCompetition × share
+
+3. Gastos Finales (después de Canibalización):
+   finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationAdjustment)
 ```
 
-### Gastos Ajustados Finales
-```
-Gastos Totales - Ajuste Competencia - Ajuste Canibalización
-```
+**Nota:** El cálculo ahora aplica los ajustes de forma multiplicativa en lugar de sustractiva, reflejando mejor el impacto porcentual de cada factor.
 
 ### Viabilidad
 - **No Viable**: < $160,000

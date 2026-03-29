@@ -322,11 +322,12 @@ function renderEvaluation() {
     
     // Calculate cannibalization adjustment
     const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
-    const cannibalizationAdjustmentAmount = evaluation.totalExpenses * (cannibalizationAdjustment / 100);
     
-    // Calculate final adjusted expenses
-    const expensesAfterCompetition = evaluation.totalExpenses - competitionAdjustmentAmount;
-    const finalAdjustedExpenses = expensesAfterCompetition - cannibalizationAdjustmentAmount;
+    // Calculate final adjusted expenses using corrected formulas
+    const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
+    const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
+    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
+    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
     
     const viability = calculateViability(finalAdjustedExpenses);
     
@@ -459,9 +460,39 @@ function renderEvaluation() {
                     <p class="viability-subtitle">Potencial de mercado mensual</p>
                 </div>
                 <div class="viability-column viability-box">
-                    <h2>Gasto Total Ajustado</h2>
+                    <h2>Gasto Final Ajustado</h2>
                     <div class="viability-value">$${finalAdjustedExpenses.toFixed(2)}</div>
                     <p class="viability-subtitle">Después de todos los ajustes</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Detalle de Cálculos de Gastos Ajustados</h2>
+            <div class="adjustment-summary">
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">1. Gastos después de Competencia:</span>
+                        <span class="value">$${expensesAfterCompetition.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</small>
+                    <small class="formula-description">expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">2. Gastos Ajustados por Share:</span>
+                        <span class="value">$${totalAdjustedExpenses.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">Formula: totalAdjustedExpenses = expensesAfterCompetition × share</small>
+                    <small class="formula-description">totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">3. Gastos Finales (después de Canibalización):</span>
+                        <span class="value">$${finalAdjustedExpenses.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">Formula: finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationAdjustment)</small>
+                    <small class="formula-description">finalAdjustedExpenses = $${totalAdjustedExpenses.toFixed(2)} × (1 - ${(cannibalizationAdjustment / 100).toFixed(4)}) = $${finalAdjustedExpenses.toFixed(2)}</small>
                 </div>
             </div>
         </div>
@@ -681,11 +712,12 @@ function exportEvaluationResults() {
     
     // Calculate cannibalization adjustment
     const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
-    const cannibalizationAdjustmentAmount = evaluation.totalExpenses * (cannibalizationAdjustment / 100);
     
-    // Calculate final adjusted expenses
-    const expensesAfterCompetition = evaluation.totalExpenses - competitionAdjustmentAmount;
-    const finalAdjustedExpenses = expensesAfterCompetition - cannibalizationAdjustmentAmount;
+    // Calculate final adjusted expenses using corrected formulas
+    const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
+    const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
+    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
+    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
     
     const viability = calculateViability(finalAdjustedExpenses);
     
@@ -804,8 +836,14 @@ function exportEvaluationResults() {
             totalExpenses: evaluation.totalExpenses,
             competitionAdjustment: competitionAdjustmentAmount,
             expensesAfterCompetition: expensesAfterCompetition,
-            cannibalizationAdjustment: cannibalizationAdjustmentAmount,
+            totalAdjustedExpenses: totalAdjustedExpenses,
+            cannibalizationAdjustmentPercentage: cannibalizationAdjustment,
             finalAdjustedExpenses: finalAdjustedExpenses,
+            formulas: {
+                expensesAfterCompetition: "totalExpenses × (1 - competitionNorm)",
+                totalAdjustedExpenses: "expensesAfterCompetition × share",
+                finalAdjustedExpenses: "totalAdjustedExpenses × (1 - cannibalizationAdjustment)"
+            },
             viability: {
                 isViable: viability.isViable,
                 status: viability.status,
