@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación - Retail Foundry</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Evaluación Completa</h1>
+            <a href="index.html" class="btn btn-secondary">← Volver al inicio</a>
+        </header>
+
+        <div class="evaluation-container" id="evaluationContainer">
+            <div class="loading">Cargando evaluación...</div>
+        </div>
+    </div>
+
+    <div id="competitorModal" class="modal">
+        <div class="modal-content">
+            <span class="close-competitor">&times;</span>
+            <h2 id="competitorModalTitle">Agregar Competidor</h2>
+            <form id="competitorForm">
+                <input type="hidden" id="competitorId">
+                <input type="hidden" id="locationId">
+                
+                <div class="form-group">
+                    <label for="competitorName">Nombre del Competidor *</label>
+                    <input type="text" id="competitorName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="competitorType">Tipo de Competidor *</label>
+                        <select id="competitorType" required>
+                            <option value="">Seleccione un tipo...</option>
+                        </select>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="m²">
+                        <label for="competitorSize">Tamaño (m²) *</label>
+                        <input type="number" id="competitorSize" step="0.01" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group input-with-symbol" data-symbol="m">
+                    <label for="competitorProximity">Distancia (metros) *</label>
+                    <input type="number" id="competitorProximity" step="1" min="0" required>
+                </div>
+
+                <div id="calculationResults" class="calculation-results" style="display: none;">
+                    <h3>Resultados de Cálculos</h3>
+                    <div class="calc-grid">
+                        <div class="calc-item">
+                            <label>Similarity(type):</label>
+                            <span id="calcTypeSimilarity">-</span>
+                            <small>Afinidad entre tipos según matriz</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Similarity(size):</label>
+                            <span id="calcSizeSimilarity">-</span>
+                            <small>MIN(1, (CompSize/LocSize)^0.5)</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Affinity:</label>
+                            <span id="calcAffinity">-</span>
+                            <small>Similarity(type) × Similarity(size)</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Proximity:</label>
+                            <span id="calcProximity">-</span>
+                            <small>1 / (1 + distance/1000)</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Impact:</label>
+                            <span id="calcImpact">-</span>
+                            <small>Affinity × Proximity</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Competition Level:</label>
+                            <span id="calcCompetitionLevel">-</span>
+                            <small>Basado en total competidores y distancia</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Accessibility:</label>
+                            <span id="calcAccessibility">-</span>
+                            <small>Según tipo de competidor</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Score:</label>
+                            <span id="calcScore">-</span>
+                            <small>(CompLevel + Accessibility + Affinity) / 3</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Share (%):</label>
+                            <span id="calcShare">-</span>
+                            <small>CaptureMin + (CaptureMax - CaptureMin) × Score</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Aporte:</label>
+                            <span id="calcContribution">-</span>
+                            <small>Impact × Share</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelCompetitorBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cannibalizationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-cannibalization">&times;</span>
+            <h2 id="cannibalizationModalTitle">Agregar Canibalización</h2>
+            <form id="cannibalizationForm">
+                <input type="hidden" id="cannibalizationId">
+                <input type="hidden" id="cannLocationId">
+                
+                <div class="form-group">
+                    <label for="cannibalizationName">Nombre *</label>
+                    <input type="text" id="cannibalizationName" required>
+                </div>
+
+                <div class="form-group input-with-symbol" data-symbol="%">
+                    <label for="cannibalizationWeight">Peso (%) *</label>
+                    <input type="number" id="cannibalizationWeight" step="0.01" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelCannibalizationBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="static/js/evaluation.js"></script>
+</body>
+</html>

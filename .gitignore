@@ -1,0 +1,31 @@
+# Base de datos SQLite
+*.db
+*.db-journal
+
+# Binarios compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+retail-foundry
+
+# Archivos de test
+*.test
+
+# Archivos de salida
+*.out
+
+# Dependencias de Go
+go.sum
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

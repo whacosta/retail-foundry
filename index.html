@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retail Foundry - Análisis de Localidades</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Retail Foundry</h1>
+                <p class="subtitle">Análisis de factibilidad para tiendas de retail</p>
+            </div>
+            <div class="header-buttons">
+                <button id="configBtn" class="btn btn-secondary">⚙️ Configuración</button>
+                <button id="newLocationBtn" class="btn btn-primary">+ Nueva Localidad</button>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Buscar localidad..." class="search-input">
+            <select id="sortSelect" class="sort-select">
+                <option value="id">Ordenar por ID</option>
+                <option value="name">Ordenar por Nombre</option>
+            </select>
+            <select id="orderSelect" class="order-select">
+                <option value="DESC">Descendente</option>
+                <option value="ASC">Ascendente</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table id="locationsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Zona de Movilidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button id="prevBtn" class="btn btn-secondary">Anterior</button>
+            <span id="pageInfo"></span>
+            <button id="nextBtn" class="btn btn-secondary">Siguiente</button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Nueva Localidad</h2>
+            <form id="locationForm">
+                <input type="hidden" id="locationId">
+                
+                <div class="form-group">
+                    <label for="name">Nombre de la localidad *</label>
+                    <input type="text" id="name" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="locationType">Tipo de Localidad *</label>
+                        <select id="locationType" required>
+                            <option value="">Seleccione un tipo...</option>
+                        </select>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="m²">
+                        <label for="locationSize">Tamaño (m²) *</label>
+                        <input type="number" id="locationSize" step="0.01" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="latitude">Latitud *</label>
+                        <input type="number" id="latitude" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="longitude">Longitud *</label>
+                        <input type="number" id="longitude" step="any" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mobilityZone">Zona de Movilidad *</label>
+                    <select id="mobilityZone" required>
+                        <option value="">Seleccione una zona...</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="homes5Min">Hogares 5min *</label>
+                        <input type="number" id="homes5Min" required>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentHomes5">% Hogares 5min (según zona)</label>
+                        <input type="number" id="percentHomes5" step="0.01" readonly class="readonly-input">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="homes10Min">Hogares 10min *</label>
+                        <input type="number" id="homes10Min" required>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentHomes10">% Hogares 10min (según zona)</label>
+                        <input type="number" id="percentHomes10" step="0.01" readonly class="readonly-input">
+                    </div>
+                </div>
+
+                <h3>Niveles Socioeconómicos (%)</h3>
+                <div class="form-row">
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentNSED">% NSE D *</label>
+                        <input type="number" id="percentNSED" step="0.01" required>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentNSECMinus">% NSE C- *</label>
+                        <input type="number" id="percentNSECMinus" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentNSECPlus">% NSE C+ *</label>
+                        <input type="number" id="percentNSECPlus" step="0.01" required>
+                    </div>
+                    <div class="form-group input-with-symbol" data-symbol="%">
+                        <label for="percentNSEB">% NSE B *</label>
+                        <input type="number" id="percentNSEB" step="0.01" required>
+                    </div>
+                </div>
+
+                <h3>Ingresos por NSE</h3>
+                <div class="form-row">
+                    <div class="form-group input-with-symbol currency" data-symbol="$">
+                        <label for="incomeD">Ingresos D *</label>
+                        <input type="number" id="incomeD" step="0.01" required>
+                    </div>
+                    <div class="form-group input-with-symbol currency" data-symbol="$">
+                        <label for="incomeCMinus">Ingresos C- *</label>
+                        <input type="number" id="incomeCMinus" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group input-with-symbol currency" data-symbol="$">
+                        <label for="incomeCPlus">Ingresos C+ *</label>
+                        <input type="number" id="incomeCPlus" step="0.01" required>
+                    </div>
+                    <div class="form-group input-with-symbol currency" data-symbol="$">
+                        <label for="incomeB">Ingresos B *</label>
+                        <input type="number" id="incomeB" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-group input-with-symbol" data-symbol="%">
+                    <label for="percentExpenses">% Gastos (según zona)</label>
+                    <input type="number" id="percentExpenses" step="0.01" readonly class="readonly-input">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <span class="close-config">&times;</span>
+            <h2>Configuración de Zonas de Movilidad</h2>
+            <p class="config-description">Configure los parámetros de cada zona de movilidad</p>
+            
+            <div class="tabs" id="zoneTabs"></div>
+            
+            <form id="configForm">
+                <div id="zonesConfig"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelConfigBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="static/js/app.js"></script>
+</body>
+</html>
