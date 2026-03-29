@@ -269,18 +269,6 @@ export function calculateEvaluation(location) {
 }
 
 /**
- * Calcula el monto del ajuste por competencia
- * Fórmula: competitionAdjustmentAmount = totalExpenses × (1 - competitionNorm) × share
- * @param {number} totalExpenses - Gastos totales estimados
- * @param {number} competitionNorm - Normalización de competencia
- * @param {number} share - Participación (en decimal, no porcentaje)
- * @returns {number} Monto del ajuste
- */
-export function calculateCompetitionAdjustmentAmount(totalExpenses, competitionNorm, share) {
-    return totalExpenses * (1 - competitionNorm) * share;
-}
-
-/**
  * Calcula la viabilidad
  * @param {number} adjustedExpenses - Gastos ajustados
  * @returns {object} Objeto con isViable, status y color

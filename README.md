@@ -1,52 +1,34 @@
 # Retail Foundry
 
-**Single Page Application (SPA)** para analizar la factibilidad de localidades para abrir tiendas de retail.
-
-> **Versión 2.0** - JavaScript puro + localStorage
+Aplicación para analizar la factibilidad de localidades para abrir tiendas de retail.
 
 🌐 **Demo en vivo:** [https://whacosta.github.io/retail-foundry/](https://whacosta.github.io/retail-foundry/)
 
+## � Descripción General
+
+Retail Foundry es una herramienta de análisis que permite evaluar la viabilidad de abrir una tienda en una localidad específica, considerando:
+
+- **Análisis demográfico** por nivel socioeconómico (NSE)
+- **Evaluación de competencia** en el área
+- **Cálculo de canibalización** con otras tiendas propias
+- **Estimación de gastos** y viabilidad financiera
+
 ## 🚀 Inicio Rápido
 
-1. **Abrir la aplicación**: Simplemente abre `index.html` en tu navegador
-2. **No requiere instalación** - Funciona completamente offline
-3. **No requiere servidor** - Todo se ejecuta en el navegador
+1. **Crear una localidad** con sus datos demográficos
+2. **Agregar competidores** cercanos a la localidad
+3. **Revisar los resultados** de viabilidad calculados automáticamente
+4. **Exportar los datos** para análisis posterior
 
-## ✨ Características
+## 📊 Tipos de Localidades y Competidores
 
-- ✅ **Single Page Application** - No requiere servidor backend
-- ✅ **Almacenamiento local** - Datos guardados en localStorage del navegador
-- ✅ **Interfaz moderna y responsive**
-- ✅ **Gestión completa de localidades** (crear, editar, eliminar)
-- ✅ **Búsqueda y filtrado** de localidades
-- ✅ **Paginación** de resultados
-- ✅ **Evaluación detallada** con cálculos automáticos
-- ✅ **Análisis por nivel socioeconómico** (NSE)
-- ✅ **Cálculos en tiempo real** con visualización de fórmulas
-- ✅ **Compatible con GitHub Pages**
-- ✅ **Exportar/Importar datos** - Backup y restauración con un click
-- ✅ **Validación de datos** - Verificación automática al importar
+La aplicación maneja cinco tipos de formatos de retail:
 
-## 📋 Requisitos
-
-- Navegador web moderno con soporte para:
-  - ES6 Modules
-  - localStorage
-  - CSS Grid y Flexbox
-
-**Navegadores compatibles:**
-- Chrome 61+
-- Firefox 60+
-- Safari 11+
-- Edge 79+
-
-## 🎯 Nuevas Funcionalidades (v2.0)
-
-### Campos Agregados
-
-**En Localidades y Competidores:**
-- **`type`**: Tipo (Supermercado, Discounters, Tradicional, Especializados, Otros)
-- **`size`**: Tamaño en metros cuadrados (m²)
+- **Supermercado**: Tiendas de formato tradicional
+- **Discounters**: Tiendas de descuento
+- **Tradicional**: Comercio tradicional/tiendas de barrio
+- **Especializados**: Tiendas especializadas
+- **Otros**: Otros formatos
 
 ### 📊 Cálculo de Población Efectiva
 
@@ -67,38 +49,67 @@ La aplicación calcula la **Población Efectiva** (mercado objetivo real) basán
 
 **Nota:** Los cálculos de gastos y viabilidad se basan en la población efectiva, no en la población total.
 
-### Campos Renombrados
+## 🧮 Fórmulas de Cálculo
 
-| Campo Anterior | Campo Nuevo | Descripción |
-|----------------|-------------|-------------|
-| `Distance` | `Proximity` | Distancia en metros |
-| `Weight` | `Impact` | Impacto calculado |
-| `ChannelCapture` | `Share` | Participación del canal |
+### Métricas Individuales por Competidor
 
-### Fórmulas de Cálculo (Actualizadas)
+Para cada competidor se calculan las siguientes métricas:
 
-#### Métricas Individuales por Competidor
-
+**1. Similarity(type) - Similitud por Tipo**
 ```
-Similarity(type) = Valor de matriz de afinidad (TYPE_AFFINITY_MATRIX)
-Similarity(size) = MIN(1, (Competitor.size / Location.size)^0.5)
+Valor obtenido de la matriz de afinidad según los tipos de localidad y competidor
+```
+
+**2. Similarity(size) - Similitud por Tamaño**
+```
+MIN(1, (Tamaño Competidor / Tamaño Localidad)^0.5)
+```
+
+**3. Affinity - Afinidad**
+```
 Affinity = Similarity(type) × Similarity(size)
-Proximity = 1 / (1 + distance / 300)
+```
+
+**4. Proximity - Proximidad**
+```
+Proximity = 1 / (1 + distancia / 300)
+```
+Donde distancia está en metros.
+
+**5. Impact - Impacto**
+```
 Impact = Affinity × Proximity
-Accessibility = Valor según tipo de competidor (ACCESSIBILITY_VALUES)
 ```
 
-#### Métricas Globales de Competencia
-
+**6. Accessibility - Accesibilidad**
 ```
-CompetitionLevel = SUM(impacts de todos los competidores)
+Valor fijo según el tipo de competidor (ver tabla de Accesibilidad)
+```
+
+### Métricas Globales de Competencia
+
+Estas métricas se calculan una sola vez para toda la localidad:
+
+**1. Competition Level - Nivel de Competencia**
+```
+CompetitionLevel = SUMA de todos los impacts de los competidores
+```
+
+**2. Competition Norm - Normalización de Competencia**
+```
 CompetitionNorm = 1 - e^(-CompetitionLevel)
-Score = 0.6 × avgAccessibility + 0.4 × (1 - CompetitionNorm)
-Share = min + (max - min) × Score
-CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
 ```
 
-**Nota importante:** Las métricas Score y Share ahora se calculan globalmente (una sola vez para toda la localidad), no por cada competidor individual.
+**3. Score - Puntuación**
+```
+Score = 0.6 × Accesibilidad Promedio + 0.4 × (1 - CompetitionNorm)
+```
+
+**4. Share - Participación**
+```
+Share = ShareMin + (ShareMax - ShareMin) × Score
+```
+Donde ShareMin y ShareMax dependen del tipo de localidad y zona de movilidad.
 
 ### Matriz de Afinidad por Tipo
 
@@ -112,165 +123,62 @@ CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
 
 ## 📖 Uso de la Aplicación
 
-### Página Principal
+### 1. Crear una Localidad
 
-1. **Crear Localidad**: Click en "+ Nueva Localidad"
-2. **Completar formulario** con todos los datos:
-   - Nombre, tipo y tamaño
-   - Ubicación (latitud/longitud)
-   - Hogares y porcentajes
-   - Niveles socioeconómicos
-   - Ingresos por NSE
-3. **Guardar** - Los datos se almacenan automáticamente
+**Datos requeridos:**
+- **Nombre** de la localidad
+- **Tipo** de formato (Supermercado, Discounters, etc.)
+- **Tamaño** en metros cuadrados
+- **Ubicación** (latitud y longitud)
+- **Datos demográficos:**
+  - Hogares a 5 minutos y su porcentaje
+  - Hogares a 10 minutos y su porcentaje
+  - Distribución por NSE (% de cada nivel socioeconómico)
+  - Ingresos promedio por NSE
+  - Porcentaje de gastos
 
-### Evaluación de Localidad
+### 2. Agregar Competidores
 
-1. **Ver Evaluación**: Click en el botón de una localidad
-2. **Agregar Competidores**:
-   - Nombre, tipo y tamaño
-   - Distancia (proximidad)
-   - **Ver cálculos en tiempo real** mientras completas el formulario
-3. **Agregar Canibalizaciones** (opcional)
-4. **Revisar resultados** con todas las métricas calculadas
+Para cada competidor cercano, registrar:
+- **Nombre** del competidor
+- **Tipo** de formato
+- **Tamaño** en m²
+- **Distancia** en metros desde la localidad
 
-### Visualización de Cálculos
+La aplicación calculará automáticamente todas las métricas de impacto.
 
-Al agregar/editar competidores, se muestra una sección con:
-- **Similarity(type)**: Afinidad entre tipos
-- **Similarity(size)**: Similitud por tamaño
-- **Affinity**: Afinidad total
-- **Proximity**: Proximidad normalizada
-- **Impact**: Impacto calculado
-- **Competition Level**: Nivel de competencia
-- **Accessibility**: Accesibilidad
-- **Score**: Puntuación final
-- **Share**: Participación del canal
-- **Aporte**: Contribución total
+### 3. Agregar Canibalizaciones (Opcional)
 
-Cada métrica muestra la fórmula utilizada para su cálculo.
+Si existen otras tiendas propias que puedan canibalizar ventas:
+- **Nombre** de la tienda
+- **Peso de canibalización** (porcentaje estimado)
 
-### Configuración de Zonas
+### 4. Revisar Resultados
 
-1. Click en "⚙️ Configuración"
-2. Seleccionar zona (Popular, Media, Alta)
-3. Ajustar parámetros:
-   - % Hogares 5min/10min
-   - % Gastos
-   - Rangos de pesos por tipo de competidor
-4. Guardar cambios
+La aplicación muestra:
+- **Gastos totales estimados** basados en población efectiva
+- **Gastos ajustados** después de competencia y canibalización
+- **Criterio de viabilidad** (No Viable, Viable, Óptimo)
+- **Detalle de todos los cálculos** con fórmulas y valores
 
-## 📁 Estructura del Proyecto
+## � Gestión de Datos
 
-```
-retail-foundry/
-├── index.html                          # Página principal (SPA)
-├── evaluation.html                     # Página de evaluación (SPA)
-├── README.md                           # Este archivo
-├── static/
-│   ├── css/
-│   │   └── styles.css                 # Estilos de la aplicación
-│   └── js/
-│       ├── constants.js               # Constantes y configuración
-│       ├── calculations.js            # Módulo de cálculos
-│       ├── storage.js                 # Módulo de localStorage
-│       ├── app-new.js                 # Lógica principal SPA
-│       └── evaluation-new.js          # Lógica de evaluación SPA
-└── [archivos obsoletos Go]            # Ya no se usan
-```
+### Exportar Datos
 
-## 💾 Gestión de Datos
+**Backup completo:**
+- Click en "📥 Exportar Datos" para descargar todas las localidades, competidores y configuraciones
+- Archivo formato: `retail-foundry-backup-YYYY-MM-DD.json`
 
-### Almacenamiento
+**Exportar resultados de evaluación:**
+- Click en "� Exportar Resultados" en la página de evaluación
+- Incluye todos los cálculos, fórmulas y valores intermedios
+- Útil para auditoría y verificación de cálculos
 
-Los datos se guardan automáticamente en **localStorage** del navegador:
-- Localidades
-- Competidores
-- Canibalizaciones
-- Zonas de movilidad
+### Importar Datos
 
-### 📥 Exportar Datos (Nuevo)
-
-Puedes exportar todos tus datos con un solo click:
-
-1. Click en el botón **"📥 Exportar Datos"** en el header
-2. Se descargará automáticamente un archivo JSON con formato:
-   - `retail-foundry-backup-YYYY-MM-DD.json`
-3. El archivo incluye:
-   - ✅ Todas las localidades
-   - ✅ Todos los competidores
-   - ✅ Todas las canibalizaciones
-   - ✅ Configuración de zonas de movilidad
-
-**Uso recomendado:**
-- Hacer backups periódicos de tus datos
-- Transferir datos entre dispositivos
-- Compartir datos con otros usuarios
-
-### 📤 Importar Datos (Nuevo)
-
-Puedes importar datos desde un archivo JSON exportado previamente:
-
-1. Click en el botón **"📤 Importar Datos"** en el header
-2. Selecciona un archivo JSON válido
-3. Revisa el resumen de datos a importar
-4. Confirma la importación
-
-**⚠️ IMPORTANTE:**
-- La importación **reemplazará todos los datos actuales**
-- Se recomienda exportar tus datos actuales antes de importar
-- El archivo debe ser un JSON válido exportado por la aplicación
-
-### Exportar/Importar desde Consola (Avanzado)
-
-También puedes usar la consola del navegador (F12):
-
-```javascript
-// Exportar todos los datos
-const data = exportData();
-console.log(JSON.stringify(data));
-
-// Importar datos desde JSON
-const data = { /* tu JSON aquí */ };
-importData(data);
-
-// Limpiar todos los datos (cuidado!)
-clearAllData();
-```
-
-## 🌐 Despliegue en GitHub Pages
-
-La aplicación está lista para GitHub Pages:
-
-1. Crear repositorio en GitHub
-2. Subir archivos (solo los necesarios):
-   - `index.html`
-   - `evaluation.html`
-   - `static/` (completa)
-3. Ir a Settings → Pages
-4. Seleccionar rama y carpeta raíz
-5. Aplicación disponible en: `https://[usuario].github.io/[repo]/`
-
-## 🔧 Solución de Problemas
-
-### Los datos no se guardan
-- Verifica que el navegador permita localStorage
-- No uses modo incógnito
-- Revisa la consola del navegador (F12) por errores
-
-### Los cálculos no se muestran
-- Completa todos los campos requeridos
-- Asegúrate de que la localidad tenga tipo y tamaño
-- Verifica la consola por errores
-
-### La aplicación no carga
-- Abre `index.html` (no los archivos en `templates/`)
-- Usa un navegador moderno compatible
-- Verifica que todos los archivos JS estén en `static/js/`
-
-### Error de módulos ES6
-- Algunos navegadores requieren servir desde un servidor HTTP
-- Usa extensiones como "Live Server" en VS Code
-- O usa Python: `python -m http.server 8000`
+- Click en "📤 Importar Datos"
+- Seleccionar archivo JSON previamente exportado
+- **Nota:** La importación reemplaza todos los datos actuales
 
 ## 📊 Cálculos Realizados
 
@@ -325,23 +233,24 @@ CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
 - **Viable**: $160,000 - $180,000
 - **Óptimo**: ≥ $180,000
 
-## 📚 Constantes y Configuración
+## 📚 Parámetros y Configuración
 
-Todas las constantes de la aplicación están definidas en `static/js/constants.js`:
+### Tipos de Formatos
 
-### COMPETITOR_TYPES
-Tipos de competidores/localidades disponibles:
+La aplicación reconoce cinco tipos de formatos de retail:
 - Supermercado
 - Discounters
 - Tradicional
 - Especializados
 - Otros
 
-### TYPE_AFFINITY_MATRIX
-Matriz de afinidad entre tipos (ver tabla en sección "Matriz de Afinidad por Tipo")
+### Matriz de Afinidad
 
-### CAPTURE_RANGES
-Rangos de captura de canal (min-max %) por tipo de competidor y zona de movilidad:
+La matriz de afinidad define qué tan similar es un tipo de competidor respecto al tipo de localidad (ver tabla completa en sección "Matriz de Afinidad por Tipo").
+
+### Rangos de Participación (Share)
+
+Rangos de participación de mercado (min-max %) según tipo de formato y zona de movilidad:
 
 | Tipo | Zona Popular | Zona Media | Zona Alta |
 |------|--------------|------------|----------|
@@ -351,92 +260,75 @@ Rangos de captura de canal (min-max %) por tipo de competidor y zona de movilida
 | Especializados | 5-10% | 8-15% | 15-25% |
 | Otros | 2-5% | 2-5% | 3-6% |
 
-### ACCESSIBILITY_VALUES
-Valores de accesibilidad por tipo de competidor:
+### Valores de Accesibilidad
+
+Valores fijos de accesibilidad según tipo de formato:
 - Supermercado: 0.9
 - Discounters: 0.6
 - Tradicional: 0.6
 - Especializados: 0.3
 - Otros: 0.3
 
-### VIABILITY_CRITERIA
-- Mínimo viable: $160,000
-- Óptimo: $180,000
+### Criterios de Viabilidad
 
-### DEFAULT_NSE_INCOME
-Ingresos por defecto por NSE:
+La viabilidad de una localidad se determina según los gastos finales ajustados:
+
+- **No Viable**: < $160,000
+- **Viable**: $160,000 - $180,000
+- **Óptimo**: ≥ $180,000
+
+### Ingresos por NSE
+
+Ingresos promedio mensuales por nivel socioeconómico:
 - NSE D: $460
 - NSE C-: $803
 - NSE C+: $2,100
 - NSE B: $4,013
 
-### EFFECTIVE_MARKET_FACTORS
-Factores de mercado efectivo por NSE y tipo de localidad (ver tabla en sección "Factores de Mercado Efectivo")
+### Factores de Mercado Efectivo
 
-### DEFAULT_MOBILITY_ZONES
-Tres zonas de movilidad predefinidas:
-- Zona popular (80% hogares 5min, 20% hogares 10min)
-- Zona media (60% hogares 5min, 40% hogares 10min)
-- Zona alta (50% hogares 5min, 55% hogares 10min)
+Ver tabla completa en sección "Factores de Mercado Efectivo por NSE y Formato".
 
-### STORAGE_KEYS
-Claves de localStorage:
-- `rf_locations`: Localidades
-- `rf_competitors`: Competidores
-- `rf_cannibalizations`: Canibalizaciones
-- `rf_mobility_zones`: Zonas de movilidad
-- `rf_global_config`: Configuración global
+### Zonas de Movilidad
 
-## 📤 Exportación de Resultados
+La aplicación maneja tres zonas de movilidad predefinidas:
 
-La aplicación permite exportar los resultados completos de evaluación en formato JSON:
+| Zona | Hogares 5min | Hogares 10min | % Gastos |
+|------|--------------|---------------|----------|
+| Popular | 80% | 20% | 35% |
+| Media | 60% | 40% | 35% |
+| Alta | 50% | 55% | 35% |
 
-1. Click en "📊 Exportar Resultados" en la página de evaluación
-2. Se descarga un archivo JSON con:
-   - Metadata (fecha, localidad, versión)
-   - Datos completos de la localidad
-   - Análisis de población y gastos
-   - Análisis de competencia (competidores, métricas, fórmulas, cálculos)
-   - Análisis de canibalización
-   - Resultados finales y viabilidad
+## 📊 Interpretación de Resultados
 
-**Uso:** El JSON exportado contiene información suficiente para que una IA pueda verificar la exactitud de todos los cálculos.
+### Métricas Clave
 
-## 🗂️ Archivos Obsoletos
+**Gastos Totales Estimados:**
+Potencial de mercado mensual basado en la población efectiva y sus ingresos.
 
-Los siguientes archivos ya **NO se usan** (pueden eliminarse):
+**Gastos Ajustados por Competencia:**
+Gastos después de aplicar el impacto de la competencia y la participación de mercado estimada.
 
-```
-❌ main.go
-❌ go.mod
-❌ run.sh
-❌ run.bat
-❌ database/
-❌ handlers/
-❌ models/
-❌ templates/ (versiones Go)
-❌ static/js/app.js (versión antigua)
-❌ static/js/evaluation.js (versión antigua)
-```
+**Gastos Finales Ajustados:**
+Gastos después de aplicar tanto el ajuste por competencia como el ajuste por canibalización.
 
-## 📝 Notas de Migración
+### Proceso de Cálculo
 
-Esta aplicación fue migrada de:
-- **Backend**: Go → JavaScript
-- **Base de datos**: SQLite → localStorage
-- **Arquitectura**: Server-side → Single Page Application
+1. **Población Efectiva**: Se calcula aplicando factores de mercado según NSE y tipo de formato
+2. **Gastos Totales**: Se estiman multiplicando población efectiva por ingresos y porcentaje de gastos
+3. **Impacto de Competencia**: Se evalúa cada competidor y se calcula el nivel de competencia global
+4. **Participación (Share)**: Se determina según el score de la localidad y los rangos del tipo de formato
+5. **Ajuste por Competencia**: Se aplica la normalización de competencia y el share
+6. **Ajuste por Canibalización**: Se aplica el porcentaje de canibalización estimado
+7. **Viabilidad**: Se compara el resultado final contra los criterios establecidos
 
-Todos los cálculos y funcionalidades se mantienen, con mejoras en:
-- Visualización de fórmulas en tiempo real
-- Nuevos campos (type, size)
-- Nuevas fórmulas de cálculo más precisas
-- Interfaz más interactiva
+## 📄 Notas Finales
 
-## 📄 Licencia
-
-Este proyecto es de uso interno.
+- Todos los cálculos se realizan en tiempo real
+- Las fórmulas y valores intermedios son visibles en la interfaz
+- Los datos se almacenan localmente en el navegador
+- Se recomienda exportar backups periódicamente
 
 ---
 
-**Versión:** 2.0 (SPA)  
 **Última actualización:** Marzo 2026
