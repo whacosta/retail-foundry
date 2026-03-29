@@ -32,6 +32,7 @@ header {
 .header-buttons {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 h1 {
@@ -54,6 +55,14 @@ h1 {
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 600;
+}
+
+.btn-text-short {
+    display: none;
+}
+
+.btn-text-full {
+    display: inline;
 }
 
 .btn-primary {
@@ -109,7 +118,7 @@ h1 {
 }
 
 .search-input {
-    flex: 1;
+    flex: 4;
     padding: 12px 20px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
@@ -123,6 +132,7 @@ h1 {
 }
 
 .sort-select, .order-select {
+    flex: 2;
     padding: 12px 20px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
@@ -263,7 +273,11 @@ label {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
     width: 100%;
     padding: 12px;
     border: 2px solid #e0e0e0;
@@ -272,9 +286,8 @@ input[type="number"] {
     transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus {
-    outline: none;
+input.readonly-input,
+input[readonly] {
     border-color: #667eea;
 }
 
@@ -698,8 +711,77 @@ h3 {
 .tabs {
     display: flex;
     gap: 10px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     border-bottom: 2px solid #e0e0e0;
+    overflow-x: auto;
+}
+
+.main-tabs {
+    border-bottom: 3px solid #e0e0e0;
+    margin-bottom: 25px;
+}
+
+.main-tabs .tab-button {
+    font-size: 1.05em;
+    padding: 12px 24px;
+}
+
+.config-section-container {
+    display: none;
+}
+
+.config-section-container.active {
+    display: block;
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.config-table th {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.config-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.config-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.config-table input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.config-table input[type="number"]:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.config-table .input-with-symbol {
+    position: relative;
+}
+
+.config-table .input-with-symbol::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-weight: 600;
+    pointer-events: none;
 }
 
 .tab-button {
@@ -935,6 +1017,28 @@ h3 {
     header {
         flex-direction: column;
         gap: 15px;
+        align-items: stretch;
+    }
+    
+    .header-buttons {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .header-buttons .btn {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        font-size: 0.85em;
+        white-space: nowrap;
+    }
+    
+    h1 {
+        font-size: 2em;
+    }
+    
+    .subtitle {
+        font-size: 1em;
     }
 
     .controls {
@@ -973,5 +1077,26 @@ h3 {
     
     .viability-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-buttons {
+        flex-direction: column;
+    }
+    
+    .header-buttons .btn {
+        width: 100%;
+        flex: none;
+        font-size: 0.9em;
+        padding: 10px 12px;
+    }
+    
+    .btn-text-full {
+        display: none;
+    }
+    
+    .btn-text-short {
+        display: inline;
     }
 }

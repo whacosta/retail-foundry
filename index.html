@@ -14,10 +14,22 @@
                 <p class="subtitle">Análisis de factibilidad para tiendas de retail</p>
             </div>
             <div class="header-buttons">
-                <button id="exportBtn" class="btn btn-secondary">📥 Exportar Datos</button>
-                <button id="importBtn" class="btn btn-secondary">📤 Importar Datos</button>
-                <button id="configBtn" class="btn btn-secondary">⚙️ Configuración</button>
-                <button id="newLocationBtn" class="btn btn-primary">+ Nueva Localidad</button>
+                <button id="exportBtn" class="btn btn-secondary">
+                    <span class="btn-text-full">📥 Exportar Datos</span>
+                    <span class="btn-text-short">📥 Exportar</span>
+                </button>
+                <button id="importBtn" class="btn btn-secondary">
+                    <span class="btn-text-full">📤 Importar Datos</span>
+                    <span class="btn-text-short">📤 Importar</span>
+                </button>
+                <button id="configBtn" class="btn btn-secondary">
+                    <span class="btn-text-full">⚙️ Configuración</span>
+                    <span class="btn-text-short">⚙️ Config</span>
+                </button>
+                <button id="newLocationBtn" class="btn btn-primary">
+                    <span class="btn-text-full">+ Nueva Localidad</span>
+                    <span class="btn-text-short">+ Nueva</span>
+                </button>
             </div>
         </header>
 
@@ -145,26 +157,26 @@
                     </div>
                 </div>
 
-                <h3>Ingresos por NSE</h3>
+                <h3>Ingresos por NSE (Configuración Global)</h3>
                 <div class="form-row">
                     <div class="form-group input-with-symbol currency" data-symbol="$">
-                        <label for="incomeD">Ingresos D *</label>
-                        <input type="number" id="incomeD" step="0.01" required>
+                        <label for="incomeD">Ingresos D</label>
+                        <input type="number" id="incomeD" step="0.01" readonly class="readonly-input">
                     </div>
                     <div class="form-group input-with-symbol currency" data-symbol="$">
-                        <label for="incomeCMinus">Ingresos C- *</label>
-                        <input type="number" id="incomeCMinus" step="0.01" required>
+                        <label for="incomeCMinus">Ingresos C-</label>
+                        <input type="number" id="incomeCMinus" step="0.01" readonly class="readonly-input">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group input-with-symbol currency" data-symbol="$">
-                        <label for="incomeCPlus">Ingresos C+ *</label>
-                        <input type="number" id="incomeCPlus" step="0.01" required>
+                        <label for="incomeCPlus">Ingresos C+</label>
+                        <input type="number" id="incomeCPlus" step="0.01" readonly class="readonly-input">
                     </div>
                     <div class="form-group input-with-symbol currency" data-symbol="$">
-                        <label for="incomeB">Ingresos B *</label>
-                        <input type="number" id="incomeB" step="0.01" required>
+                        <label for="incomeB">Ingresos B</label>
+                        <input type="number" id="incomeB" step="0.01" readonly class="readonly-input">
                     </div>
                 </div>
 
@@ -184,18 +196,60 @@
     <div id="configModal" class="modal">
         <div class="modal-content">
             <span class="close-config">&times;</span>
-            <h2>Configuración de Zonas de Movilidad</h2>
-            <p class="config-description">Configure los parámetros de cada zona de movilidad</p>
+            <h2>Configuración</h2>
+            <p class="config-description">Configure los parámetros del sistema</p>
             
-            <div class="tabs" id="zoneTabs"></div>
+            <!-- Tabs principales: Zonas e Ingresos -->
+            <div class="tabs main-tabs">
+                <button type="button" class="tab-button active" onclick="switchMainTab('zones')">Zonas de Movilidad</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
+            </div>
             
-            <form id="configForm">
-                <div id="zonesConfig"></div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelConfigBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                </div>
-            </form>
+            <!-- Sección de Zonas de Movilidad -->
+            <div id="zonesSection" class="config-section-container active">
+                <form id="configForm">
+                    <div id="zonesConfig"></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelConfigBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Sección de Ingresos NSE -->
+            <div id="incomesSection" class="config-section-container">
+                <form id="globalConfigForm">
+                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Ingresos Promedio por NSE</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los ingresos promedio por nivel socioeconómico (valores globales)</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeD">Ingresos NSE D *</label>
+                            <input type="number" id="globalIncomeD" step="0.01" required>
+                        </div>
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeCMinus">Ingresos NSE C- *</label>
+                            <input type="number" id="globalIncomeCMinus" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeCPlus">Ingresos NSE C+ *</label>
+                            <input type="number" id="globalIncomeCPlus" step="0.01" required>
+                        </div>
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeB">Ingresos NSE B *</label>
+                            <input type="number" id="globalIncomeB" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelGlobalConfigBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

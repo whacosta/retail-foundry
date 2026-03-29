@@ -161,13 +161,19 @@ export const DEFAULT_MOBILITY_ZONES = [
     }
 ];
 
+// Valores default para ingresos por NSE
+export const DEFAULT_NSE_INCOME = {
+    income_d: 460,
+    income_c_minus: 803,
+    income_c_plus: 2100,
+    income_b: 4013
+};
+
 // Configuración de localStorage
 export const STORAGE_KEYS = {
-    locations: 'retail_foundry_locations',
-    competitors: 'retail_foundry_competitors',
-    mobilityZones: 'retail_foundry_mobility_zones',
-    cannibalizations: 'retail_foundry_cannibalizations',
-    nextLocationId: 'retail_foundry_next_location_id',
-    nextCompetitorId: 'retail_foundry_next_competitor_id',
-    nextCannibalizationId: 'retail_foundry_next_cannibalization_id'
+    LOCATIONS: 'rf_locations',
+    COMPETITORS: 'rf_competitors',
+    CANNIBALIZATIONS: 'rf_cannibalizations',
+    MOBILITY_ZONES: 'rf_mobility_zones',
+    GLOBAL_CONFIG: 'rf_global_config'
 };

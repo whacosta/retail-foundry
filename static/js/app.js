@@ -1,6 +1,6 @@
 // App principal para Retail Foundry - SPA Version
 import { COMPETITOR_TYPES } from './constants.js';
-import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData } from './storage.js';
+import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData, getGlobalConfig, updateGlobalConfig } from './storage.js';
 
 // Inicializar storage al cargar
 initStorage();
@@ -23,8 +23,10 @@ const closeBtn = document.getElementsByClassName('close')[0];
 const closeConfigBtn = document.getElementsByClassName('close-config')[0];
 const cancelBtn = document.getElementById('cancelBtn');
 const cancelConfigBtn = document.getElementById('cancelConfigBtn');
+const cancelGlobalConfigBtn = document.getElementById('cancelGlobalConfigBtn');
 const locationForm = document.getElementById('locationForm');
 const configForm = document.getElementById('configForm');
+const globalConfigForm = document.getElementById('globalConfigForm');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 const orderSelect = document.getElementById('orderSelect');
@@ -66,6 +68,10 @@ cancelBtn.onclick = () => {
 };
 
 cancelConfigBtn.onclick = () => {
+    closeConfigModal();
+};
+
+cancelGlobalConfigBtn.onclick = () => {
     closeConfigModal();
 };
 
@@ -164,6 +170,9 @@ locationForm.addEventListener('submit', async (e) => {
 });
 
 function openModal(location = null) {
+    // Cargar ingresos desde configuración global
+    const globalConfig = getGlobalConfig();
+    
     if (location) {
         document.getElementById('modalTitle').textContent = 'Editar Localidad';
         document.getElementById('locationId').value = location.id;
@@ -181,10 +190,6 @@ function openModal(location = null) {
         document.getElementById('percentNSECMinus').value = location.percent_nse_c_minus;
         document.getElementById('percentNSECPlus').value = location.percent_nse_c_plus;
         document.getElementById('percentNSEB').value = location.percent_nse_b;
-        document.getElementById('incomeD').value = location.income_d;
-        document.getElementById('incomeCMinus').value = location.income_c_minus;
-        document.getElementById('incomeCPlus').value = location.income_c_plus;
-        document.getElementById('incomeB').value = location.income_b;
         document.getElementById('percentExpenses').value = location.percent_expenses;
     } else {
         document.getElementById('modalTitle').textContent = 'Nueva Localidad';
@@ -193,6 +198,13 @@ function openModal(location = null) {
         document.getElementById('mobilityZone').value = '1';
         updatePercentagesFromZone('1');
     }
+    
+    // Cargar ingresos globales (readonly)
+    document.getElementById('incomeD').value = globalConfig.income_d;
+    document.getElementById('incomeCMinus').value = globalConfig.income_c_minus;
+    document.getElementById('incomeCPlus').value = globalConfig.income_c_plus;
+    document.getElementById('incomeB').value = globalConfig.income_b;
+    
     modal.style.display = 'block';
 }
 
@@ -309,57 +321,78 @@ function updatePercentagesFromZone(zoneId) {
 
 function openConfigModal() {
     loadMobilityZones();
-    const zoneTabs = document.getElementById('zoneTabs');
+    
+    // Cargar datos de zonas de movilidad en formato tabla
     const zonesConfig = document.getElementById('zonesConfig');
-    zoneTabs.innerHTML = '';
+    
     zonesConfig.innerHTML = '';
     
-    mobilityZones.forEach((zone, index) => {
-        const tabButton = document.createElement('button');
-        tabButton.type = 'button';
-        tabButton.className = `tab-button ${index === 0 ? 'active' : ''}`;
-        tabButton.textContent = zone.name;
-        tabButton.onclick = () => switchTab(zone.id);
-        zoneTabs.appendChild(tabButton);
-        
-        const tabContent = document.createElement('div');
-        tabContent.className = `tab-content ${index === 0 ? 'active' : ''}`;
-        tabContent.id = `zone-tab-${zone.id}`;
-        tabContent.innerHTML = `
-            <div class="zone-tab-header">
-                <h4>${zone.name}</h4>
-            </div>
-            
-            <div class="config-section">
-                <div class="config-section-title">Parámetros de Movilidad</div>
-                <div class="config-grid">
-                    <div class="form-group input-with-symbol" data-symbol="%">
-                        <label>% Hogares 5min</label>
-                        <input type="number" step="0.01" class="zone-percent-5" data-zone-id="${zone.id}" value="${zone.percent_homes_5}" required>
-                    </div>
-                    <div class="form-group input-with-symbol" data-symbol="%">
-                        <label>% Hogares 10min</label>
-                        <input type="number" step="0.01" class="zone-percent-10" data-zone-id="${zone.id}" value="${zone.percent_homes_10}" required>
-                    </div>
-                    <div class="form-group input-with-symbol" data-symbol="%">
-                        <label>% Gastos</label>
-                        <input type="number" step="0.01" class="zone-percent-expenses" data-zone-id="${zone.id}" value="${zone.percent_expenses}" required>
-                    </div>
-                </div>
-            </div>
-        `;
-        zonesConfig.appendChild(tabContent);
-    });
+    // Crear tabla de configuración de zonas
+    const tableHTML = `
+        <h3 style="margin-top: 20px; margin-bottom: 15px;">Parámetros de Movilidad por Zona</h3>
+        <div class="table-container">
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th>Zona de Movilidad</th>
+                        <th>% Hogares 5min</th>
+                        <th>% Hogares 10min</th>
+                        <th>% Gastos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${mobilityZones.map(zone => `
+                        <tr>
+                            <td><strong>${zone.name}</strong></td>
+                            <td>
+                                <div class="input-with-symbol" data-symbol="%">
+                                    <input type="number" step="0.01" class="zone-percent-5" data-zone-id="${zone.id}" value="${zone.percent_homes_5}" required>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="input-with-symbol" data-symbol="%">
+                                    <input type="number" step="0.01" class="zone-percent-10" data-zone-id="${zone.id}" value="${zone.percent_homes_10}" required>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="input-with-symbol" data-symbol="%">
+                                    <input type="number" step="0.01" class="zone-percent-expenses" data-zone-id="${zone.id}" value="${zone.percent_expenses}" required>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    zonesConfig.innerHTML = tableHTML;
+    
+    // Cargar datos de ingresos NSE
+    const globalConfig = getGlobalConfig();
+    document.getElementById('globalIncomeD').value = globalConfig.income_d;
+    document.getElementById('globalIncomeCMinus').value = globalConfig.income_c_minus;
+    document.getElementById('globalIncomeCPlus').value = globalConfig.income_c_plus;
+    document.getElementById('globalIncomeB').value = globalConfig.income_b;
+    
+    // Mostrar la sección de zonas por defecto
+    switchMainTab('zones');
     
     configModal.style.display = 'block';
 }
 
-function switchTab(zoneId) {
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+function switchMainTab(section) {
+    // Cambiar tabs activos
+    document.querySelectorAll('.main-tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.config-section-container').forEach(container => container.classList.remove('active'));
     
-    event.target.classList.add('active');
-    document.getElementById(`zone-tab-${zoneId}`).classList.add('active');
+    if (section === 'zones') {
+        document.querySelector('.main-tabs .tab-button:first-child').classList.add('active');
+        document.getElementById('zonesSection').classList.add('active');
+    } else if (section === 'incomes') {
+        document.querySelector('.main-tabs .tab-button:last-child').classList.add('active');
+        document.getElementById('incomesSection').classList.add('active');
+    }
 }
 
 function closeConfigModal() {
@@ -390,6 +423,26 @@ configForm.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error:', error);
         alert('Error al guardar la configuración');
+    }
+});
+
+globalConfigForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    try {
+        const globalConfig = {
+            income_d: parseFloat(document.getElementById('globalIncomeD').value),
+            income_c_minus: parseFloat(document.getElementById('globalIncomeCMinus').value),
+            income_c_plus: parseFloat(document.getElementById('globalIncomeCPlus').value),
+            income_b: parseFloat(document.getElementById('globalIncomeB').value)
+        };
+        
+        updateGlobalConfig(globalConfig);
+        closeGlobalConfigModal();
+        alert('✅ Configuración de ingresos NSE guardada exitosamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al guardar la configuración');
     }
 });
 
@@ -478,6 +531,7 @@ function handleImportData(event) {
 window.viewEvaluation = viewEvaluation;
 window.editLocation = editLocationHandler;
 window.deleteLocationHandler = deleteLocationHandler;
+window.switchMainTab = switchMainTab;
 
 // Inicializar
 loadMobilityZones();
