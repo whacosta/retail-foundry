@@ -161,7 +161,21 @@ La aplicación muestra:
 - **Criterio de viabilidad** (No Viable, Viable, Óptimo)
 - **Detalle de todos los cálculos** con fórmulas y valores
 
-## � Gestión de Datos
+### 5. Configurar Criterios de Viabilidad (Opcional)
+
+Para ajustar los umbrales de viabilidad según tu negocio:
+
+1. Click en **⚙️ Configuración**
+2. Seleccionar tab **"Criterios de Viabilidad"**
+3. Ajustar valores en la tabla:
+   - **Mínimo Viable**: Umbral mínimo para considerar viable
+   - **Óptimo**: Umbral para considerar óptimo
+4. Los criterios se aplican automáticamente según el tipo de localidad
+5. Click en **"Guardar Configuración"**
+
+**Nota:** Cada tipo de localidad (Supermercado, Discounters, etc.) puede tener diferentes criterios de viabilidad.
+
+## 💾 Gestión de Datos
 
 ### Exportar Datos
 
@@ -271,11 +285,25 @@ Valores fijos de accesibilidad según tipo de formato:
 
 ### Criterios de Viabilidad
 
-La viabilidad de una localidad se determina según los gastos finales ajustados:
+La viabilidad de una localidad se determina según los gastos finales ajustados y el **tipo de localidad**. Los criterios son **configurables** desde el panel de configuración.
 
-- **No Viable**: < $160,000
-- **Viable**: $160,000 - $180,000
-- **Óptimo**: ≥ $180,000
+**Valores por defecto por tipo de localidad:**
+
+| Tipo de Localidad | Mínimo Viable | Óptimo |
+|-------------------|---------------|--------|
+| Supermercado | $160,000 | $180,000 |
+| Discounters | $140,000 | $160,000 |
+| Tradicional | $100,000 | $120,000 |
+| Especializados | $120,000 | $150,000 |
+| Otros | $80,000 | $100,000 |
+
+**Clasificación:**
+- **No Viable**: Gastos finales < Mínimo Viable
+- **Viable**: Mínimo Viable ≤ Gastos finales < Óptimo
+- **Óptimo**: Gastos finales ≥ Óptimo
+
+**Configuración:**
+Los criterios pueden ajustarse desde **⚙️ Configuración → Criterios de Viabilidad**. Cada tipo de localidad puede tener sus propios umbrales según las características del negocio.
 
 ### Ingresos por NSE
 

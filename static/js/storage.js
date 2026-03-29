@@ -1,5 +1,5 @@
 // Módulo de almacenamiento en localStorage para Retail Foundry
-import { STORAGE_KEYS, DEFAULT_MOBILITY_ZONES, DEFAULT_NSE_INCOME } from './constants.js';
+import { STORAGE_KEYS, DEFAULT_MOBILITY_ZONES, DEFAULT_NSE_INCOME, DEFAULT_VIABILITY_CRITERIA } from './constants.js';
 
 /**
  * Inicializa el almacenamiento con datos por defecto si no existen
@@ -26,6 +26,11 @@ export function initStorage() {
     // Inicializar configuración global si no existe
     if (!localStorage.getItem(STORAGE_KEYS.GLOBAL_CONFIG)) {
         localStorage.setItem(STORAGE_KEYS.GLOBAL_CONFIG, JSON.stringify(DEFAULT_NSE_INCOME));
+    }
+    
+    // Inicializar criterios de viabilidad si no existen
+    if (!localStorage.getItem(STORAGE_KEYS.VIABILITY_CRITERIA)) {
+        localStorage.setItem(STORAGE_KEYS.VIABILITY_CRITERIA, JSON.stringify(DEFAULT_VIABILITY_CRITERIA));
     }
     
     // Inicializar contadores de IDs
@@ -386,6 +391,21 @@ export function getGlobalConfig() {
  */
 export function updateGlobalConfig(config) {
     localStorage.setItem(STORAGE_KEYS.GLOBAL_CONFIG, JSON.stringify(config));
+}
+
+/**
+ * Obtiene los criterios de viabilidad
+ */
+export function getViabilityCriteria() {
+    const criteria = localStorage.getItem(STORAGE_KEYS.VIABILITY_CRITERIA);
+    return criteria ? JSON.parse(criteria) : DEFAULT_VIABILITY_CRITERIA;
+}
+
+/**
+ * Actualiza los criterios de viabilidad
+ */
+export function updateViabilityCriteria(criteria) {
+    localStorage.setItem(STORAGE_KEYS.VIABILITY_CRITERIA, JSON.stringify(criteria));
 }
 
 /**

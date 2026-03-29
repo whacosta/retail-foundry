@@ -6,8 +6,7 @@ import {
     COMPETITION_LEVEL_RANGES,
     DISTANCE_THRESHOLDS,
     COMPETITOR_TYPES, 
-    EFFECTIVE_MARKET_FACTORS,
-    VIABILITY_CRITERIA
+    EFFECTIVE_MARKET_FACTORS
 } from './constants.js';
 
 /**
@@ -271,28 +270,45 @@ export function calculateEvaluation(location) {
 /**
  * Calcula la viabilidad
  * @param {number} adjustedExpenses - Gastos ajustados
+ * @param {string} locationType - Tipo de localidad
+ * @param {object} viabilityCriteria - Criterios de viabilidad configurables
  * @returns {object} Objeto con isViable, status y color
  */
-export function calculateViability(adjustedExpenses) {
-    const { minViable, optimal } = VIABILITY_CRITERIA;
+export function calculateViability(adjustedExpenses, locationType = 'Supermercado', viabilityCriteria = null) {
+    // Si no se pasan criterios, usar los del tipo de localidad o valores por defecto
+    let criteria;
+    if (viabilityCriteria && viabilityCriteria[locationType]) {
+        criteria = viabilityCriteria[locationType];
+    } else {
+        // Valores por defecto si no hay criterios configurados
+        criteria = { minViable: 160000, optimal: 180000 };
+    }
+    
+    const { minViable, optimal } = criteria;
     
     if (adjustedExpenses < minViable) {
         return {
             isViable: false,
             status: 'No Viable',
-            color: 'viable-no'
+            color: 'viable-no',
+            minViable,
+            optimal
         };
     } else if (adjustedExpenses >= minViable && adjustedExpenses < optimal) {
         return {
             isViable: true,
             status: 'Viable',
-            color: 'viable-yes'
+            color: 'viable-yes',
+            minViable,
+            optimal
         };
     } else {
         return {
             isViable: true,
             status: 'Óptimo',
-            color: 'viable-optimal'
+            color: 'viable-optimal',
+            minViable,
+            optimal
         };
     }
 }

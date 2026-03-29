@@ -201,10 +201,11 @@
             <h2>Configuración</h2>
             <p class="config-description">Configure los parámetros del sistema</p>
             
-            <!-- Tabs principales: Zonas e Ingresos -->
+            <!-- Tabs principales: Zonas, Ingresos y Viabilidad -->
             <div class="tabs main-tabs">
                 <button type="button" class="tab-button active" onclick="switchMainTab('zones')">Zonas de Movilidad</button>
                 <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('viability')">Criterios de Viabilidad</button>
             </div>
             
             <!-- Sección de Zonas de Movilidad -->
@@ -248,6 +249,21 @@
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelGlobalConfigBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Sección de Criterios de Viabilidad -->
+            <div id="viabilitySection" class="config-section-container">
+                <form id="viabilityConfigForm">
+                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Criterios de Viabilidad por Tipo de Localidad</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los umbrales de viabilidad según el tipo de formato</p>
+                    
+                    <div id="viabilityConfig"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelViabilityConfigBtn">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Guardar Configuración</button>
                     </div>
                 </form>

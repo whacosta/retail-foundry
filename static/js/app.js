@@ -1,6 +1,6 @@
 // App principal para Retail Foundry - SPA Version
 import { COMPETITOR_TYPES } from './constants.js';
-import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData, getGlobalConfig, updateGlobalConfig } from './storage.js';
+import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData, getGlobalConfig, updateGlobalConfig, getViabilityCriteria, updateViabilityCriteria } from './storage.js';
 
 // Inicializar storage al cargar
 initStorage();
@@ -24,9 +24,11 @@ const closeConfigBtn = document.getElementsByClassName('close-config')[0];
 const cancelBtn = document.getElementById('cancelBtn');
 const cancelConfigBtn = document.getElementById('cancelConfigBtn');
 const cancelGlobalConfigBtn = document.getElementById('cancelGlobalConfigBtn');
+const cancelViabilityConfigBtn = document.getElementById('cancelViabilityConfigBtn');
 const locationForm = document.getElementById('locationForm');
 const configForm = document.getElementById('configForm');
 const globalConfigForm = document.getElementById('globalConfigForm');
+const viabilityConfigForm = document.getElementById('viabilityConfigForm');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 const orderSelect = document.getElementById('orderSelect');
@@ -72,6 +74,10 @@ cancelConfigBtn.onclick = () => {
 };
 
 cancelGlobalConfigBtn.onclick = () => {
+    closeConfigModal();
+};
+
+cancelViabilityConfigBtn.onclick = () => {
     closeConfigModal();
 };
 
@@ -417,11 +423,15 @@ function switchMainTab(section) {
     document.querySelectorAll('.config-section-container').forEach(container => container.classList.remove('active'));
     
     if (section === 'zones') {
-        document.querySelector('.main-tabs .tab-button:first-child').classList.add('active');
+        document.querySelector('.main-tabs .tab-button:nth-child(1)').classList.add('active');
         document.getElementById('zonesSection').classList.add('active');
     } else if (section === 'incomes') {
-        document.querySelector('.main-tabs .tab-button:last-child').classList.add('active');
+        document.querySelector('.main-tabs .tab-button:nth-child(2)').classList.add('active');
         document.getElementById('incomesSection').classList.add('active');
+    } else if (section === 'viability') {
+        document.querySelector('.main-tabs .tab-button:nth-child(3)').classList.add('active');
+        document.getElementById('viabilitySection').classList.add('active');
+        loadViabilityConfig();
     }
 }
 
@@ -473,6 +483,91 @@ globalConfigForm.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error:', error);
         alert('❌ Error al guardar la configuración');
+    }
+});
+
+// Configuración de Criterios de Viabilidad
+function loadViabilityConfig() {
+    const viabilityCriteria = getViabilityCriteria();
+    const container = document.getElementById('viabilityConfig');
+    
+    let html = `
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo de Localidad</th>
+                        <th>Mínimo Viable ($)</th>
+                        <th>Óptimo ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    COMPETITOR_TYPES.forEach(type => {
+        const criteria = viabilityCriteria[type] || { minViable: 160000, optimal: 180000 };
+        html += `
+            <tr>
+                <td><strong>${type}</strong></td>
+                <td>
+                    <input type="number" 
+                           id="minViable_${type}" 
+                           class="viability-input" 
+                           data-type="${type}" 
+                           value="${criteria.minViable}" 
+                           step="1000" 
+                           required
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </td>
+                <td>
+                    <input type="number" 
+                           id="optimal_${type}" 
+                           class="viability-input" 
+                           data-type="${type}" 
+                           value="${criteria.optimal}" 
+                           step="1000" 
+                           required
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+viabilityConfigForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    try {
+        const viabilityCriteria = {};
+        
+        COMPETITOR_TYPES.forEach(type => {
+            const minViable = parseFloat(document.getElementById(`minViable_${type}`).value);
+            const optimal = parseFloat(document.getElementById(`optimal_${type}`).value);
+            
+            if (optimal <= minViable) {
+                throw new Error(`El valor óptimo debe ser mayor que el mínimo viable para ${type}`);
+            }
+            
+            viabilityCriteria[type] = {
+                minViable: minViable,
+                optimal: optimal
+            };
+        });
+        
+        updateViabilityCriteria(viabilityCriteria);
+        closeConfigModal();
+        alert('✅ Criterios de viabilidad guardados exitosamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ ' + error.message);
     }
 });
 

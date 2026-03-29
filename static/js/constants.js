@@ -100,10 +100,28 @@ export const DISTANCE_THRESHOLDS = {
     medium: 700    // <= 700m: medio, > 700m: lejano
 };
 
-// Criterios de viabilidad
-export const VIABILITY_CRITERIA = {
-    minViable: 160000.0,
-    optimal: 180000.0
+// Criterios de viabilidad por defecto (por tipo de localidad)
+export const DEFAULT_VIABILITY_CRITERIA = {
+    'Supermercado': {
+        minViable: 160000.0,
+        optimal: 180000.0
+    },
+    'Discounters': {
+        minViable: 140000.0,
+        optimal: 160000.0
+    },
+    'Tradicional': {
+        minViable: 100000.0,
+        optimal: 120000.0
+    },
+    'Especializados': {
+        minViable: 120000.0,
+        optimal: 150000.0
+    },
+    'Otros': {
+        minViable: 80000.0,
+        optimal: 100000.0
+    }
 };
 
 // Zonas de movilidad por defecto
@@ -210,5 +228,6 @@ export const STORAGE_KEYS = {
     COMPETITORS: 'rf_competitors',
     CANNIBALIZATIONS: 'rf_cannibalizations',
     MOBILITY_ZONES: 'rf_mobility_zones',
-    GLOBAL_CONFIG: 'rf_global_config'
+    GLOBAL_CONFIG: 'rf_global_config',
+    VIABILITY_CRITERIA: 'rf_viability_criteria'
 };

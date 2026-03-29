@@ -1,16 +1,19 @@
 // Evaluation page for Retail Foundry - SPA Version
 import { COMPETITOR_TYPES } from './constants.js';
-import { 
-    getLocationById, 
-    getMobilityZoneById, 
+import {
+    getLocations,
+    getLocationById,
     getCompetitorsByLocationId,
     getCannibalizationsByLocationId,
+    getMobilityZones,
+    getMobilityZoneById,
     createCompetitor,
     updateCompetitor,
     deleteCompetitor,
     createCannibalization,
     updateCannibalization,
-    deleteCannibalization
+    deleteCannibalization,
+    getViabilityCriteria
 } from './storage.js';
 import { 
     calculateEvaluation, 
@@ -321,7 +324,9 @@ function renderEvaluation() {
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
     
-    const viability = calculateViability(finalAdjustedExpenses);
+    // Get viability criteria and calculate viability
+    const viabilityCriteria = getViabilityCriteria();
+    const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
     
     const container = document.getElementById('evaluationContainer');
     container.innerHTML = `
@@ -442,8 +447,8 @@ function renderEvaluation() {
                     <h2>Criterio de Viabilidad</h2>
                     <div class="viability-status">${viability.status}</div>
                     <div class="viability-details">
-                        <p>Mínimo viable: $160,000</p>
-                        <p>Rango óptimo: $160,000 - $180,000</p>
+                        <p>Mínimo viable: $${viability.minViable.toLocaleString()}</p>
+                        <p>Rango óptimo: $${viability.minViable.toLocaleString()} - $${viability.optimal.toLocaleString()}</p>
                     </div>
                 </div>
                 <div class="viability-column viability-box">
@@ -704,7 +709,9 @@ function exportEvaluationResults() {
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
     
-    const viability = calculateViability(finalAdjustedExpenses);
+    // Get viability criteria and calculate viability
+    const viabilityCriteria = getViabilityCriteria();
+    const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
     
     // Build complete evaluation export
     const exportData = {
