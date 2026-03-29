@@ -94,6 +94,14 @@ searchInput.addEventListener('input', (e) => {
     loadLocations();
 });
 
+// Event listener para seleccionar/deseleccionar todas
+document.getElementById('selectAll').addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('.location-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+    });
+});
+
 sortSelect.addEventListener('change', (e) => {
     currentSort = e.target.value;
     loadLocations();
@@ -241,6 +249,7 @@ function loadLocations() {
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td><input type="checkbox" class="location-checkbox" data-location-id="${location.id}"></td>
                     <td>${location.id}</td>
                     <td>${location.name}</td>
                     <td>${zoneName}</td>
@@ -260,7 +269,7 @@ function loadLocations() {
                 tableBody.appendChild(row);
             });
         } else {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
         }
 
         const totalPages = Math.ceil(data.total / limit);
@@ -470,17 +479,57 @@ globalConfigForm.addEventListener('submit', async (e) => {
 // Funciones de Importación/Exportación
 function handleExportData() {
     try {
-        const data = exportData();
+        // Obtener checkboxes seleccionados
+        const selectedCheckboxes = document.querySelectorAll('.location-checkbox:checked');
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.locationId));
+        
+        let data;
+        
+        if (selectedIds.length === 0) {
+            // Si no hay selección, exportar todo
+            const confirmAll = confirm('No hay localidades seleccionadas.\n\n¿Desea exportar TODAS las localidades?');
+            if (!confirmAll) return;
+            
+            data = exportData();
+        } else {
+            // Exportar solo las seleccionadas
+            const allData = exportData();
+            
+            // Filtrar localidades seleccionadas
+            const selectedLocations = allData.locations.filter(loc => selectedIds.includes(loc.id));
+            
+            // Filtrar competidores y canibalizaciones de las localidades seleccionadas
+            const selectedCompetitors = allData.competitors.filter(comp => selectedIds.includes(comp.location_id));
+            const selectedCannibalizations = allData.cannibalizations.filter(cann => selectedIds.includes(cann.location_id));
+            
+            data = {
+                locations: selectedLocations,
+                competitors: selectedCompetitors,
+                cannibalizations: selectedCannibalizations,
+                mobilityZones: allData.mobilityZones,
+                globalConfig: allData.globalConfig
+            };
+            
+            // Confirmar exportación
+            const confirmMsg = `Se exportarán:\n\n` +
+                `📍 ${selectedLocations.length} localidades seleccionadas\n` +
+                `🏪 ${selectedCompetitors.length} competidores\n` +
+                `🔄 ${selectedCannibalizations.length} canibalizaciones\n\n` +
+                `¿Continuar con la exportación?`;
+            
+            if (!confirm(confirmMsg)) return;
+        }
+        
         const dataStr = JSON.stringify(data, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         
         const url = URL.createObjectURL(dataBlob);
         const link = document.createElement('a');
         link.href = url;
-        
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        link.download = `retail-foundry-backup-${timestamp}.json`;
-        
+        const filename = selectedIds.length > 0 
+            ? `retail-foundry-${selectedIds.length}-localidades-${new Date().toISOString().split('T')[0]}.json`
+            : `retail-foundry-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -514,22 +563,33 @@ function handleImportData(event) {
                 throw new Error('Estructura de datos inválida');
             }
             
-            // Confirmar con el usuario
-            const confirmMsg = `¿Está seguro de que desea importar estos datos?\n\n` +
-                `Localidades: ${data.locations.length}\n` +
-                `Competidores: ${data.competitors.length}\n` +
-                `Canibalizaciones: ${data.cannibalizations.length}\n` +
-                `Zonas de Movilidad: ${data.mobilityZones.length}\n\n` +
-                `⚠️ ADVERTENCIA: Esto reemplazará todos los datos actuales.`;
+            // Preguntar modo de importación
+            const modeMsg = `Se importarán:\n\n` +
+                `📍 Localidades: ${data.locations.length}\n` +
+                `🏪 Competidores: ${data.competitors.length}\n` +
+                `🔄 Canibalizaciones: ${data.cannibalizations.length}\n\n` +
+                `¿Cómo desea importar?\n\n` +
+                `✅ ACEPTAR = Agregar a los datos existentes\n` +
+                `❌ CANCELAR = Reemplazar todos los datos`;
             
-            if (confirm(confirmMsg)) {
-                importData(data);
+            const addMode = confirm(modeMsg);
+            
+            // Confirmar la acción
+            const actionMsg = addMode 
+                ? '¿Confirma que desea AGREGAR estos datos a los existentes?'
+                : '⚠️ ¿Confirma que desea REEMPLAZAR todos los datos actuales?\n\nEsta acción no se puede deshacer.';
+            
+            if (confirm(actionMsg)) {
+                importData(data, !addMode); // !addMode = replaceMode
                 
                 // Recargar datos en la interfaz
                 loadMobilityZones();
                 loadLocations();
                 
-                alert('✅ Datos importados exitosamente');
+                const successMsg = addMode 
+                    ? '✅ Datos agregados exitosamente'
+                    : '✅ Datos reemplazados exitosamente';
+                alert(successMsg);
             }
         } catch (error) {
             console.error('Error al importar datos:', error);
