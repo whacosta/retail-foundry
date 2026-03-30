@@ -229,5 +229,8 @@ export const STORAGE_KEYS = {
     CANNIBALIZATIONS: 'rf_cannibalizations',
     MOBILITY_ZONES: 'rf_mobility_zones',
     GLOBAL_CONFIG: 'rf_global_config',
-    VIABILITY_CRITERIA: 'rf_viability_criteria'
+    VIABILITY_CRITERIA: 'rf_viability_criteria',
+    nextLocationId: 'rf_next_location_id',
+    nextCompetitorId: 'rf_next_competitor_id',
+    nextCannibalizationId: 'rf_next_cannibalization_id'
 };

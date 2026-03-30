@@ -4,6 +4,11 @@ Aplicación para analizar la factibilidad de localidades para abrir tiendas de r
 
 🌐 **Demo en vivo:** [https://whacosta.github.io/retail-foundry/](https://whacosta.github.io/retail-foundry/)
 
+Se puede ejecutar localmente con cualquier servidor web, ejemplo:
+```python
+python3 -m http.server 8000
+```
+
 ## � Descripción General
 
 Retail Foundry es una herramienta de análisis que permite evaluar la viabilidad de abrir una tienda en una localidad específica, considerando:

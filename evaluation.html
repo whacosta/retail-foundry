@@ -105,13 +105,49 @@
                 <input type="hidden" id="cannLocationId">
                 
                 <div class="form-group">
-                    <label for="cannibalizationName">Nombre *</label>
+                    <label for="cannibalizationName">Nombre del Local *</label>
                     <input type="text" id="cannibalizationName" required>
                 </div>
 
-                <div class="form-group input-with-symbol" data-symbol="%">
-                    <label for="cannibalizationWeight">Peso (%) *</label>
-                    <input type="number" id="cannibalizationWeight" step="0.01" required>
+                <div class="form-group input-with-symbol" data-symbol="m²">
+                    <label for="cannibalizationSize">Tamaño (m²) *</label>
+                    <input type="number" id="cannibalizationSize" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group input-with-symbol" data-symbol="m">
+                    <label for="cannibalizationProximity">Distancia (metros) *</label>
+                    <input type="number" id="cannibalizationProximity" step="1" min="0" required>
+                </div>
+
+                <div id="cannibalizationCalculationResults" class="calculation-results" style="display: none;">
+                    <h3>Resultados de Cálculos</h3>
+                    <div class="calc-grid">
+                        <div class="calc-item">
+                            <label>Proximity:</label>
+                            <span id="calcCannProximity">-</span>
+                            <small>1 / (1 + distance/300)</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Size Factor:</label>
+                            <span id="calcCannSizeFactor">-</span>
+                            <small>MIN(1, (CannSize/LocSize)^0.5)</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Base:</label>
+                            <span id="calcCannBase">-</span>
+                            <small>0.7 × Proximity + 0.3 × SizeFactor</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Cannibalization Factor:</label>
+                            <span id="calcCannFactor">-</span>
+                            <small>Base × Proximity × SizeFactor</small>
+                        </div>
+                        <div class="calc-item">
+                            <label>Impact:</label>
+                            <span id="calcCannImpact">-</span>
+                            <small>Proximity × Cannibalization Factor</small>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-actions">

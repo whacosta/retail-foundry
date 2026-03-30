@@ -5,6 +5,7 @@ import {
     getLocationById,
     getCompetitorsByLocationId,
     getCannibalizationsByLocationId,
+    getCannibalizations,
     getMobilityZones,
     getMobilityZoneById,
     createCompetitor,
@@ -23,7 +24,8 @@ import {
     calculateCompetitionNorm,
     calculateScore,
     getCaptureRange,
-    calculateShare
+    calculateShare,
+    calculateProximity
 } from './calculations.js';
 
 // Get location ID from URL
@@ -100,6 +102,10 @@ function setupEventListeners() {
     
     cannibalizationForm.addEventListener('submit', handleCannibalizationSubmit);
     
+    // Update cannibalization calculations when form changes
+    document.getElementById('cannibalizationSize').addEventListener('input', updateCannibalizationCalculations);
+    document.getElementById('cannibalizationProximity').addEventListener('input', updateCannibalizationCalculations);
+    
     // Close modals on outside click
     window.onclick = (event) => {
         if (event.target === competitorModal) {
@@ -139,6 +145,39 @@ function updateCalculations() {
     document.getElementById('calculationResults').style.display = 'block';
 }
 
+function updateCannibalizationCalculations() {
+    const cannSize = parseFloat(document.getElementById('cannibalizationSize').value);
+    const distance = parseFloat(document.getElementById('cannibalizationProximity').value);
+    
+    if (!cannSize || !distance || !currentLocation.size) {
+        document.getElementById('cannibalizationCalculationResults').style.display = 'none';
+        return;
+    }
+    
+    // Calcular Proximity
+    const proximity = calculateProximity(distance);
+    
+    // Calcular SizeFactor: MIN(1, (CannSize/LocSize)^0.5)
+    const sizeFactor = Math.min(1, Math.pow(cannSize / currentLocation.size, 0.5));
+    
+    // Calcular Base: 0.7 × Proximity + 0.3 × SizeFactor
+    const base = 0.7 * proximity + 0.3 * sizeFactor;
+    
+    // Calcular cannibalizationFactor: Base × Proximity × SizeFactor
+    const cannibalizationFactor = base * proximity * sizeFactor;
+    
+    // Calcular Impact: Proximity × cannibalizationFactor
+    const impact = proximity * cannibalizationFactor;
+    
+    document.getElementById('calcCannProximity').textContent = proximity.toFixed(4);
+    document.getElementById('calcCannSizeFactor').textContent = sizeFactor.toFixed(4);
+    document.getElementById('calcCannBase').textContent = base.toFixed(4);
+    document.getElementById('calcCannFactor').textContent = cannibalizationFactor.toFixed(4);
+    document.getElementById('calcCannImpact').textContent = impact.toFixed(4);
+    
+    document.getElementById('cannibalizationCalculationResults').style.display = 'block';
+}
+
 function handleCompetitorSubmit(e) {
     e.preventDefault();
     
@@ -172,17 +211,28 @@ function handleCannibalizationSubmit(e) {
     e.preventDefault();
     
     const cannibalizationId = document.getElementById('cannibalizationId').value;
+    const cannSize = parseFloat(document.getElementById('cannibalizationSize').value);
+    const distance = parseFloat(document.getElementById('cannibalizationProximity').value);
+    
+    // Calcular cannibalizationFactor automáticamente
+    const proximity = calculateProximity(distance);
+    const sizeFactor = Math.min(1, Math.pow(cannSize / currentLocation.size, 0.5));
+    const base = 0.7 * proximity + 0.3 * sizeFactor;
+    const cannibalizationFactor = base * proximity * sizeFactor;
+    
     const cannibalizationData = {
         location_id: locationId,
         name: document.getElementById('cannibalizationName').value,
-        weight: parseFloat(document.getElementById('cannibalizationWeight').value)
+        size: cannSize,
+        proximity: distance,
+        cannibalizationFactor: cannibalizationFactor
     };
     
     try {
         if (cannibalizationId) {
-            updateCannibalization(parseInt(cannibalizationId), cannibalizationData);
+            const updated = updateCannibalization(parseInt(cannibalizationId), cannibalizationData);
         } else {
-            createCannibalization(cannibalizationData);
+            const created = createCannibalization(cannibalizationData);
         }
         
         closeCannibalizationModal();
@@ -225,12 +275,15 @@ function openCannibalizationModal(cannibalization = null) {
         document.getElementById('cannibalizationModalTitle').textContent = 'Editar Canibalización';
         document.getElementById('cannibalizationId').value = cannibalization.id;
         document.getElementById('cannibalizationName').value = cannibalization.name;
-        document.getElementById('cannibalizationWeight').value = cannibalization.weight;
+        document.getElementById('cannibalizationSize').value = cannibalization.size;
+        document.getElementById('cannibalizationProximity').value = cannibalization.proximity;
+        updateCannibalizationCalculations();
     } else {
         document.getElementById('cannibalizationModalTitle').textContent = 'Agregar Canibalización';
         cannibalizationForm.reset();
         document.getElementById('cannibalizationId').value = '';
         document.getElementById('cannLocationId').value = locationId;
+        document.getElementById('cannibalizationCalculationResults').style.display = 'none';
     }
     cannibalizationModal.style.display = 'block';
 }
@@ -238,6 +291,7 @@ function openCannibalizationModal(cannibalization = null) {
 function closeCannibalizationModal() {
     cannibalizationModal.style.display = 'none';
     cannibalizationForm.reset();
+    document.getElementById('cannibalizationCalculationResults').style.display = 'none';
 }
 
 function deleteCompetitorHandler(id) {
@@ -256,7 +310,11 @@ function deleteCompetitorHandler(id) {
 function deleteCannibalizationHandler(id) {
     if (confirm('¿Está seguro de que desea eliminar esta canibalización?')) {
         try {
-            deleteCannibalization(id);
+            const result = deleteCannibalization(id);
+            
+            // Obtener todas las canibalizaciones para debug
+            const allCanns = getCannibalizations();
+            
             cannibalizations = getCannibalizationsByLocationId(locationId);
             renderEvaluation();
         } catch (error) {
@@ -315,14 +373,33 @@ function renderEvaluation() {
     // Calculate global share
     const share = calculateShare(score, captureRange);
     
-    // Calculate cannibalization adjustment
-    const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
+    // Calculate cannibalizations with metrics (filtrar datos antiguos sin los nuevos campos)
+    const cannibalizationsWithMetrics = cannibalizations
+        .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
+        .map(cann => {
+            const proximity = calculateProximity(cann.proximity);
+            const impact = proximity * cann.cannibalizationFactor;
+            return { 
+                id: cann.id,
+                location_id: cann.location_id,
+                name: cann.name,
+                size: cann.size,
+                proximity: cann.proximity,
+                cannibalizationFactor: cann.cannibalizationFactor,
+                proximityValue: proximity,
+                impact: impact
+            };
+        });
+    
+    // Calculate cannibalization level and norm
+    const cannibalizationLevel = cannibalizationsWithMetrics.reduce((sum, cann) => sum + cann.impact, 0);
+    const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
     
     // Calculate final adjusted expenses using corrected formulas
     const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
     const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
-    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
-    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
+    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
+    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
     
     // Get viability criteria and calculate viability
     const viabilityCriteria = getViabilityCriteria();
@@ -472,24 +549,30 @@ function renderEvaluation() {
                         <span class="label">1. Gastos después de Competencia:</span>
                         <span class="value">$${expensesAfterCompetition.toFixed(2)}</span>
                     </div>
-                    <small class="formula-description">Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</small>
-                    <small class="formula-description">expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</small>
+                    <small class="formula-description">
+                        <p>Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</p>
+                        <p>expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</p>
+                    </small>
                 </div>
                 <div class="adjustment-item">
                     <div>
                         <span class="label">2. Gastos Ajustados por Share:</span>
                         <span class="value">$${totalAdjustedExpenses.toFixed(2)}</span>
                     </div>
-                    <small class="formula-description">Formula: totalAdjustedExpenses = expensesAfterCompetition × share</small>
-                    <small class="formula-description">totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</small>
+                    <small class="formula-description">
+                        <p>Formula: totalAdjustedExpenses = expensesAfterCompetition × share</p>
+                        <p>totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                    </small>
                 </div>
                 <div class="adjustment-item">
                     <div>
                         <span class="label">3. Gastos Finales (después de Canibalización):</span>
                         <span class="value">$${finalAdjustedExpenses.toFixed(2)}</span>
                     </div>
-                    <small class="formula-description">Formula: finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationAdjustment)</small>
-                    <small class="formula-description">finalAdjustedExpenses = $${totalAdjustedExpenses.toFixed(2)} × (1 - ${(cannibalizationAdjustment / 100).toFixed(4)}) = $${finalAdjustedExpenses.toFixed(2)}</small>
+                    <small class="formula-description">
+                        <p>Formula: finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationNorm)</p>
+                        <p>finalAdjustedExpenses = $${totalAdjustedExpenses.toFixed(2)} × (1 - ${cannibalizationNorm.toFixed(4)}) = $${finalAdjustedExpenses.toFixed(2)}</p>
+                    </small>
                 </div>
             </div>
         </div>
@@ -552,24 +635,32 @@ function renderEvaluation() {
                             <span class="label">Score:</span>
                             <span class="value">${(score * 100).toFixed(2)}%</span>
                         </div>
-                        <small class="formula-description">Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</small>
-                        <small class="formula-description">score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</small>
+                        <small class="formula-description">
+                            <p>Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</p>
+                            <p> competitionNorm = 1 - e^(-suma de todos los impactos) => competitionNorm = 1 - e^(-${competitionLevel.toFixed(4)}) = ${competitionNorm.toFixed(4)} </p>
+                            <p>La Competencia Normal indica que se tiene una <strong>Perdida del ${((1 - competitionNorm) * 100).toFixed(2)}% de la cuota de mercado</strong></p>
+                            <p>score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</p>
+                        </small>
                     </div>
                     <div class="adjustment-item">
                         <div>
                             <span class="label">Share:</span>
                             <span class="value">${share.toFixed(2)}%</span>
                         </div>
-                        <small class="formula-description">Formula: share = min + (max - min) × score</small>
-                        <small class="formula-description">share = ${captureRange.min.toFixed(2)}% + (${captureRange.max.toFixed(2)}% - ${captureRange.min.toFixed(2)}%) × ${score.toFixed(4)} = ${share.toFixed(2)}%</small>
+                        <small class="formula-description">
+                            <p>Formula: share = min + (max - min) × score</p>
+                            <p>share = ${captureRange.min.toFixed(2)}% + (${captureRange.max.toFixed(2)}% - ${captureRange.min.toFixed(2)}%) × ${score.toFixed(4)} = ${share.toFixed(2)}%</p>
+                        </small>
                     </div>
                     <div class="adjustment-item">
                         <div>
                             <span class="label">Monto del Ajuste:</span>
                             <span class="value adjustment-amount" id="adjustmentAmount">$${totalAdjustedExpenses.toFixed(2)}</span>
                         </div>
-                        <small class="formula-description">Formula: totalAdjustedExpenses = totalExpenses × (1 - competitionNorm) × share</small>
-                        <small class="formula-description">totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share/100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</small>
+                        <small class="formula-description">
+                            <p>Formula: totalAdjustedExpenses = totalExpenses × (1 - competitionNorm) × share</p>
+                            <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share/100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                        </small>
                     </div>
                 </div>
             </div>
@@ -584,15 +675,21 @@ function renderEvaluation() {
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>Peso (%)</th>
+                                <th>Tamaño (m²)</th>
+                                <th>Proximidad (%)</th>
+                                <th>Factor (%)</th>
+                                <th>Impact (%)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="cannibalizationTableBody">
-                            ${cannibalizations.length > 0 ? cannibalizations.map(cann => `
+                            ${cannibalizationsWithMetrics.length > 0 ? cannibalizationsWithMetrics.map(cann => `
                                 <tr data-id="${cann.id}">
                                     <td>${cann.name}</td>
-                                    <td>${cann.weight.toFixed(2)}%</td>
+                                    <td>${cann.size.toFixed(2)}</td>
+                                    <td>${(cann.proximityValue * 100).toFixed(2)}%</td>
+                                    <td>${(cann.cannibalizationFactor * 100).toFixed(2)}%</td>
+                                    <td>${(cann.impact * 100).toFixed(2)}%</td>
                                     <td>
                                         <div class="action-buttons">
                                             <button class="btn btn-success btn-sm" onclick="window.editCannibalizationHandler(${cann.id})">Editar</button>
@@ -602,7 +699,7 @@ function renderEvaluation() {
                                 </tr>
                             `).join('') : `
                                 <tr id="noCannibalizationRow">
-                                    <td colspan="3" style="text-align: center; padding: 20px;">No hay canibalizaciones registradas</td>
+                                    <td colspan="6" style="text-align: center; padding: 20px;">No hay canibalizaciones registradas</td>
                                 </tr>
                             `}
                         </tbody>
@@ -612,15 +709,24 @@ function renderEvaluation() {
                 <div class="adjustment-summary">
                     <div class="adjustment-item">
                         <div>
-                            <span class="label">Ajuste Total:</span>
-                            <span class="value" id="totalCannAdjustment">${cannibalizationAdjustment.toFixed(2)}%</span>
+                            <span class="label">Cannibalization Norm:</span>
+                            <span class="value" id="totalCannAdjustment">${(cannibalizationNorm * 100).toFixed(2)}%</span>
                         </div>
+                        <small class="formula-description">
+                            <p>Formula: cannibalizationNorm = 1 - e^(-cannibalizationLevel)</p>
+                            <p>cannibalizationLevel = suma de todos los impactos => cannibalizationLevel = ${cannibalizationLevel.toFixed(4)}</p>
+                            <p>cannibalizationNorm = 1 - e^(-${cannibalizationLevel.toFixed(4)}) = ${cannibalizationNorm.toFixed(4)}</p>
+                        </small>
                     </div>
                     <div class="adjustment-item">
                         <div>
                             <span class="label">Monto del Ajuste:</span>
                             <span class="value adjustment-amount" id="cannAdjustmentAmount">-$${cannibalizationAdjustmentAmount.toFixed(2)}</span>
                         </div>
+                        <small class="formula-description">
+                            <p>Formula: cannibalizationAdjustmentAmount = totalAdjustedExpenses × cannibalizationNorm</p>
+                            <p>cannibalizationAdjustmentAmount = $${totalAdjustedExpenses.toFixed(2)} × ${cannibalizationNorm.toFixed(4)} = $${cannibalizationAdjustmentAmount.toFixed(2)}</p>
+                        </small>
                     </div>
                 </div>
             </div>
@@ -700,14 +806,33 @@ function exportEvaluationResults() {
     // Calculate global share
     const share = calculateShare(score, captureRange);
     
-    // Calculate cannibalization adjustment
-    const cannibalizationAdjustment = cannibalizations.reduce((sum, cann) => sum + cann.weight, 0);
+    // Calculate cannibalizations with metrics (filtrar datos antiguos sin los nuevos campos)
+    const cannibalizationsWithMetrics = cannibalizations
+        .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
+        .map(cann => {
+            const proximity = calculateProximity(cann.proximity);
+            const impact = proximity * cann.cannibalizationFactor;
+            return { 
+                id: cann.id,
+                location_id: cann.location_id,
+                name: cann.name,
+                size: cann.size,
+                proximity: cann.proximity,
+                cannibalizationFactor: cann.cannibalizationFactor,
+                proximityValue: proximity,
+                impact: impact
+            };
+        });
+    
+    // Calculate cannibalization level and norm
+    const cannibalizationLevel = cannibalizationsWithMetrics.reduce((sum, cann) => sum + cann.impact, 0);
+    const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
     
     // Calculate final adjusted expenses using corrected formulas
     const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
     const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
-    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * (cannibalizationAdjustment / 100);
-    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - (cannibalizationAdjustment / 100));
+    const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
+    const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
     
     // Get viability criteria and calculate viability
     const viabilityCriteria = getViabilityCriteria();
@@ -817,23 +942,28 @@ function exportEvaluationResults() {
             }
         },
         cannibalizationAnalysis: {
-            cannibalizations: cannibalizations,
-            totalCannibalization: cannibalizationAdjustment,
+            cannibalizations: cannibalizationsWithMetrics,
+            cannibalizationLevel: cannibalizationLevel,
+            cannibalizationNorm: cannibalizationNorm,
+            formulas: {
+                cannibalizationLevel: "SUM(impacts)",
+                cannibalizationNorm: "1 - e^(-cannibalizationLevel)"
+            },
             adjustment: {
                 amount: cannibalizationAdjustmentAmount,
-                percentage: cannibalizationAdjustment
+                percentage: cannibalizationNorm * 100
             }
         },
         finalResults: {
             totalExpenses: evaluation.totalExpenses,
             expensesAfterCompetition: expensesAfterCompetition,
             totalAdjustedExpenses: totalAdjustedExpenses,
-            cannibalizationAdjustmentPercentage: cannibalizationAdjustment,
+            cannibalizationNorm: cannibalizationNorm,
             finalAdjustedExpenses: finalAdjustedExpenses,
             formulas: {
                 expensesAfterCompetition: "totalExpenses × (1 - competitionNorm)",
                 totalAdjustedExpenses: "expensesAfterCompetition × share",
-                finalAdjustedExpenses: "totalAdjustedExpenses × (1 - cannibalizationAdjustment)"
+                finalAdjustedExpenses: "totalAdjustedExpenses × (1 - cannibalizationNorm)"
             },
             viability: {
                 isViable: viability.isViable,

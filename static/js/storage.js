@@ -42,8 +42,8 @@ export function initStorage() {
         localStorage.setItem(STORAGE_KEYS.nextCompetitorId, '1');
     }
     
-    if (!localStorage.getItem(STORAGE_KEYS.CANNIBALIZATIONS)) {
-        localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, '1');
+    if (!localStorage.getItem(STORAGE_KEYS.nextCannibalizationId)) {
+        localStorage.setItem(STORAGE_KEYS.nextCannibalizationId, '1');
     }
 }
 
@@ -253,7 +253,7 @@ export function createCannibalization(cannibalizationData) {
     const cannibalizations = getCannibalizations();
     const newCannibalization = {
         ...cannibalizationData,
-        id: getNextId(STORAGE_KEYS.CANNIBALIZATIONS)
+        id: getNextId(STORAGE_KEYS.nextCannibalizationId)
     };
     
     cannibalizations.push(newCannibalization);
