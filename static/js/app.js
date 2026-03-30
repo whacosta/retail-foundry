@@ -258,6 +258,7 @@ function loadLocations() {
                     <td><input type="checkbox" class="location-checkbox" data-location-id="${location.id}"></td>
                     <td>${location.id}</td>
                     <td>${location.name}</td>
+                    <td>${location.type || 'N/A'}</td>
                     <td>${zoneName}</td>
                     <td>
                         <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="location-link" title="Ver en Google Maps">
@@ -275,7 +276,7 @@ function loadLocations() {
                 tableBody.appendChild(row);
             });
         } else {
-            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No se encontraron localidades</td></tr>';
         }
 
         const totalPages = Math.ceil(data.total / limit);

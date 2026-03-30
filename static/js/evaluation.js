@@ -1,12 +1,10 @@
 // Evaluation page for Retail Foundry - SPA Version
 import { COMPETITOR_TYPES } from './constants.js';
 import {
-    getLocations,
     getLocationById,
     getCompetitorsByLocationId,
     getCannibalizationsByLocationId,
     getCannibalizations,
-    getMobilityZones,
     getMobilityZoneById,
     createCompetitor,
     updateCompetitor,
@@ -373,7 +371,7 @@ function renderEvaluation() {
     // Calculate global share
     const share = calculateShare(score, captureRange);
     
-    // Calculate cannibalizations with metrics (filtrar datos antiguos sin los nuevos campos)
+    // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
         .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
         .map(cann => {
@@ -806,7 +804,7 @@ function exportEvaluationResults() {
     // Calculate global share
     const share = calculateShare(score, captureRange);
     
-    // Calculate cannibalizations with metrics (filtrar datos antiguos sin los nuevos campos)
+    // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
         .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
         .map(cann => {
