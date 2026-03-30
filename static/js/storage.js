@@ -45,6 +45,9 @@ export function initStorage() {
     if (!localStorage.getItem(STORAGE_KEYS.nextCannibalizationId)) {
         localStorage.setItem(STORAGE_KEYS.nextCannibalizationId, '1');
     }
+    
+    // Sincronizar contadores con los IDs máximos existentes
+    syncIdCounters();
 }
 
 /**
@@ -54,6 +57,29 @@ function getNextId(key) {
     const nextId = parseInt(localStorage.getItem(key)) || 1;
     localStorage.setItem(key, (nextId + 1).toString());
     return nextId;
+}
+
+/**
+ * Sincroniza los contadores de IDs con los IDs máximos existentes
+ */
+function syncIdCounters() {
+    const locations = getLocations();
+    if (locations.length > 0) {
+        const maxLocationId = Math.max(...locations.map(l => l.id));
+        localStorage.setItem(STORAGE_KEYS.nextLocationId, (maxLocationId + 1).toString());
+    }
+    
+    const competitors = getCompetitors();
+    if (competitors.length > 0) {
+        const maxCompetitorId = Math.max(...competitors.map(c => c.id));
+        localStorage.setItem(STORAGE_KEYS.nextCompetitorId, (maxCompetitorId + 1).toString());
+    }
+    
+    const cannibalizations = getCannibalizations();
+    if (cannibalizations.length > 0) {
+        const maxCannibalizationId = Math.max(...cannibalizations.map(c => c.id));
+        localStorage.setItem(STORAGE_KEYS.nextCannibalizationId, (maxCannibalizationId + 1).toString());
+    }
 }
 
 // ==================== MOBILITY ZONES ====================
@@ -376,6 +402,9 @@ export function importData(data, replaceMode = false) {
             localStorage.setItem(STORAGE_KEYS.GLOBAL_CONFIG, JSON.stringify(data.globalConfig));
         }
     }
+    
+    // Sincronizar contadores después de importar
+    syncIdCounters();
 }
 
 /**
