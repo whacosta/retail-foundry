@@ -49,7 +49,38 @@ export function calculateAffinity(locationType, locationSize, competitorType, co
 }
 
 /**
- * Calcula la Proximidad basada en la distancia
+ * Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
+ * Implementación robusta que evita problemas de precisión numérica
+ * @param {number} lat1 - Latitud del punto 1
+ * @param {number} lon1 - Longitud del punto 1
+ * @param {number} lat2 - Latitud del punto 2
+ * @param {number} lon2 - Longitud del punto 2
+ * @returns {number} Distancia en metros
+ */
+export function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const toRadians = (degrees) => degrees * (Math.PI / 180);
+    
+    const R = 6371; // Radio de la Tierra en km
+    
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    
+    const lat1Rad = toRadians(lat1);
+    const lat2Rad = toRadians(lat2);
+    
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    
+    const distanceKm = R * c;
+    
+    return distanceKm * 1000; // Convertir a metros
+}
+
+/**
+ * Calcula la proximidad basada en la distancia
  * Proximidad inversa: mientras más cerca, mayor proximidad
  * Fórmula: Proximity = 1 / (1 + distance / 300)
  * @param {number} distance - Distancia en metros

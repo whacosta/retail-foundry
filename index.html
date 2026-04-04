@@ -14,6 +14,10 @@
                 <p class="subtitle">Análisis de factibilidad para tiendas de retail</p>
             </div>
             <div class="header-buttons">
+                <button id="downloadTemplateBtn" class="btn btn-secondary">
+                    <span class="btn-text-full">📄 Plantilla Excel</span>
+                    <span class="btn-text-short">📄 Plantilla</span>
+                </button>
                 <button id="exportBtn" class="btn btn-secondary">
                     <span class="btn-text-full">📥 Exportar Datos</span>
                     <span class="btn-text-short">📥 Exportar</span>
@@ -33,7 +37,19 @@
             </div>
         </header>
 
-        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display: none;">
+        
+        <div id="templateModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 400px;">
+                <span class="close-template">&times;</span>
+                <h2>Descargar Plantilla</h2>
+                <p>Descargue la plantilla de Excel para importar datos al sistema.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-template-btn">Cancelar</button>
+                    <button type="button" id="downloadTemplateBtn" class="btn btn-primary">📥 Descargar Plantilla</button>
+                </div>
+            </div>
+        </div>
 
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Buscar localidad..." class="search-input">
@@ -105,6 +121,29 @@
                     <div class="form-group">
                         <label for="longitude">Longitud *</label>
                         <input type="number" id="longitude" step="any" min="-180" max="180" required title="La longitud debe estar entre -180 y 180">
+                    </div>
+                </div>
+
+                <h3>Información Demográfica</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="provincia">Provincia *</label>
+                        <input type="text" id="provincia" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="canton">Cantón *</label>
+                        <input type="text" id="canton" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="parroquia">Parroquia *</label>
+                        <input type="text" id="parroquia" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="direccion">Dirección *</label>
+                        <input type="text" id="direccion" required>
                     </div>
                 </div>
 
@@ -202,11 +241,12 @@
             <h2>Configuración</h2>
             <p class="config-description">Configure los parámetros del sistema</p>
             
-            <!-- Tabs principales: Zonas, Ingresos y Viabilidad -->
+            <!-- Tabs principales: Zonas, Ingresos, Viabilidad y Constantes -->
             <div class="tabs main-tabs">
                 <button type="button" class="tab-button active" onclick="switchMainTab('zones')">Zonas de Movilidad</button>
                 <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
                 <button type="button" class="tab-button" onclick="switchMainTab('viability')">Criterios de Viabilidad</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('constants')">Constantes del Sistema</button>
             </div>
             
             <!-- Sección de Zonas de Movilidad -->
@@ -268,6 +308,20 @@
                         <button type="submit" class="btn btn-primary">Guardar Configuración</button>
                     </div>
                 </form>
+            </div>
+            
+            <!-- Sección de Constantes del Sistema -->
+            <div id="constantsSection" class="config-section-container">
+                <div style="padding: 20px 0;">
+                    <h3 style="margin-top: 0; margin-bottom: 10px;">Constantes del Sistema</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Valores de referencia utilizados en los cálculos del sistema (solo lectura)</p>
+                    
+                    <div id="constantsConfig"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cerrar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

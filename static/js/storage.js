@@ -353,44 +353,22 @@ export function importData(data, replaceMode = false) {
             localStorage.setItem(STORAGE_KEYS.GLOBAL_CONFIG, JSON.stringify(data.globalConfig));
         }
     } else {
-        // Modo aditivo: agrega a los datos existentes
+        // Modo aditivo: agrega a los datos existentes respetando los IDs del archivo
         if (data.locations) {
             const existingLocations = getLocations();
-            const maxId = existingLocations.length > 0 ? Math.max(...existingLocations.map(l => l.id)) : 0;
-            
-            // Reasignar IDs para evitar conflictos
-            const newLocations = data.locations.map((loc, index) => ({
-                ...loc,
-                id: maxId + index + 1
-            }));
-            
-            const merged = [...existingLocations, ...newLocations];
+            const merged = [...existingLocations, ...data.locations];
             localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(merged));
         }
         
         if (data.competitors) {
             const existingCompetitors = getCompetitors();
-            const maxId = existingCompetitors.length > 0 ? Math.max(...existingCompetitors.map(c => c.id)) : 0;
-            
-            const newCompetitors = data.competitors.map((comp, index) => ({
-                ...comp,
-                id: maxId + index + 1
-            }));
-            
-            const merged = [...existingCompetitors, ...newCompetitors];
+            const merged = [...existingCompetitors, ...data.competitors];
             localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(merged));
         }
         
         if (data.cannibalizations) {
             const existingCannibalizations = getCannibalizations();
-            const maxId = existingCannibalizations.length > 0 ? Math.max(...existingCannibalizations.map(c => c.id)) : 0;
-            
-            const newCannibalizations = data.cannibalizations.map((cann, index) => ({
-                ...cann,
-                id: maxId + index + 1
-            }));
-            
-            const merged = [...existingCannibalizations, ...newCannibalizations];
+            const merged = [...existingCannibalizations, ...data.cannibalizations];
             localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(merged));
         }
         

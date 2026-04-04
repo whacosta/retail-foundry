@@ -14,8 +14,8 @@ import {
     deleteCannibalization,
     getViabilityCriteria
 } from './storage.js';
-import { 
-    calculateEvaluation, 
+import {
+    calculateEvaluation,
     calculateViability,
     calculateCompetitorMetrics,
     calculateCompetitionLevel,
@@ -23,7 +23,8 @@ import {
     calculateScore,
     getCaptureRange,
     calculateShare,
-    calculateProximity
+    calculateProximity,
+    calculateHaversineDistance
 } from './calculations.js';
 
 // Get location ID from URL
@@ -48,18 +49,18 @@ function init() {
         window.location.href = 'index.html';
         return;
     }
-    
+
     currentLocation = getLocationById(locationId);
     if (!currentLocation) {
         alert('Localidad no encontrada');
         window.location.href = 'index.html';
         return;
     }
-    
+
     currentZone = getMobilityZoneById(currentLocation.mobility_zone_id);
     competitors = getCompetitorsByLocationId(locationId);
     cannibalizations = getCannibalizationsByLocationId(locationId);
-    
+
     loadCompetitorTypes();
     setupEventListeners();
     renderEvaluation();
@@ -80,30 +81,32 @@ function setupEventListeners() {
     // Competitor modal
     const closeCompetitorBtn = document.querySelector('.close-competitor');
     const cancelCompetitorBtn = document.getElementById('cancelCompetitorBtn');
-    
+
     closeCompetitorBtn.onclick = () => closeCompetitorModal();
     cancelCompetitorBtn.onclick = () => closeCompetitorModal();
-    
+
     competitorForm.addEventListener('submit', handleCompetitorSubmit);
-    
+
     // Update calculations when form changes
     document.getElementById('competitorType').addEventListener('change', updateCalculations);
     document.getElementById('competitorSize').addEventListener('input', updateCalculations);
-    document.getElementById('competitorProximity').addEventListener('input', updateCalculations);
-    
+    document.getElementById('competitorLatitude').addEventListener('input', updateCompetitorDistance);
+    document.getElementById('competitorLongitude').addEventListener('input', updateCompetitorDistance);
+
     // Cannibalization modal
     const closeCannibalizationBtn = document.querySelector('.close-cannibalization');
     const cancelCannibalizationBtn = document.getElementById('cancelCannibalizationBtn');
-    
+
     closeCannibalizationBtn.onclick = () => closeCannibalizationModal();
     cancelCannibalizationBtn.onclick = () => closeCannibalizationModal();
-    
+
     cannibalizationForm.addEventListener('submit', handleCannibalizationSubmit);
-    
+
     // Update cannibalization calculations when form changes
     document.getElementById('cannibalizationSize').addEventListener('input', updateCannibalizationCalculations);
-    document.getElementById('cannibalizationProximity').addEventListener('input', updateCannibalizationCalculations);
-    
+    document.getElementById('cannibalizationLatitude').addEventListener('input', updateCannibalizationDistance);
+    document.getElementById('cannibalizationLongitude').addEventListener('input', updateCannibalizationDistance);
+
     // Close modals on outside click
     window.onclick = (event) => {
         if (event.target === competitorModal) {
@@ -115,86 +118,130 @@ function setupEventListeners() {
     };
 }
 
+function updateCompetitorDistance() {
+    const lat = parseFloat(document.getElementById('competitorLatitude').value);
+    const lon = parseFloat(document.getElementById('competitorLongitude').value);
+
+    if (!isNaN(lat) && !isNaN(lon) && currentLocation.latitude && currentLocation.longitude) {
+        const distance = calculateHaversineDistance(
+            currentLocation.latitude,
+            currentLocation.longitude,
+            lat,
+            lon
+        );
+        document.getElementById('competitorProximity').value = Math.round(distance);
+        updateCalculations();
+    }
+}
+
 function updateCalculations() {
     const type = document.getElementById('competitorType').value;
     const size = parseFloat(document.getElementById('competitorSize').value);
     const proximity = parseFloat(document.getElementById('competitorProximity').value);
-    
-    if (!type || !size || !proximity || !currentLocation.type || !currentLocation.size) {
+
+    if (!type || isNaN(size) || size <= 0 || isNaN(proximity) || !currentLocation.type || !currentLocation.size) {
         document.getElementById('calculationResults').style.display = 'none';
         return;
     }
-    
+
     const tempCompetitor = {
         type,
         size,
         proximity
     };
-    
-    const metrics = calculateCompetitorMetrics(tempCompetitor, currentLocation, currentZone);
-    
-    document.getElementById('calcTypeSimilarity').textContent = metrics.typeSimilarity.toFixed(4);
-    document.getElementById('calcSizeSimilarity').textContent = metrics.sizeSimilarity.toFixed(4);
-    document.getElementById('calcAffinity').textContent = metrics.affinity.toFixed(4);
-    document.getElementById('calcProximity').textContent = metrics.proximity.toFixed(4);
-    document.getElementById('calcImpact').textContent = metrics.impact.toFixed(4);
-    document.getElementById('calcAccessibility').textContent = metrics.accessibility.toFixed(4);
-    
-    document.getElementById('calculationResults').style.display = 'block';
+
+    try {
+        const metrics = calculateCompetitorMetrics(tempCompetitor, currentLocation, currentZone);
+
+        document.getElementById('calcTypeSimilarity').textContent = metrics.typeSimilarity.toFixed(4);
+        document.getElementById('calcSizeSimilarity').textContent = metrics.sizeSimilarity.toFixed(4);
+        document.getElementById('calcAffinity').textContent = metrics.affinity.toFixed(4);
+        document.getElementById('calcProximity').textContent = metrics.proximity.toFixed(4);
+        document.getElementById('calcImpact').textContent = metrics.impact.toFixed(4);
+        document.getElementById('calcAccessibility').textContent = metrics.accessibility.toFixed(4);
+
+        document.getElementById('calculationResults').style.display = 'block';
+    } catch (error) {
+        console.error('Error calculating metrics:', error);
+        document.getElementById('calculationResults').style.display = 'none';
+    }
+}
+
+function updateCannibalizationDistance() {
+    const lat = parseFloat(document.getElementById('cannibalizationLatitude').value);
+    const lon = parseFloat(document.getElementById('cannibalizationLongitude').value);
+
+    if (!isNaN(lat) && !isNaN(lon) && currentLocation.latitude && currentLocation.longitude) {
+        const distance = calculateHaversineDistance(
+            currentLocation.latitude,
+            currentLocation.longitude,
+            lat,
+            lon
+        );
+        document.getElementById('cannibalizationProximity').value = Math.round(distance);
+        updateCannibalizationCalculations();
+    }
 }
 
 function updateCannibalizationCalculations() {
     const cannSize = parseFloat(document.getElementById('cannibalizationSize').value);
     const distance = parseFloat(document.getElementById('cannibalizationProximity').value);
-    
-    if (!cannSize || !distance || !currentLocation.size) {
+
+    if (isNaN(cannSize) || cannSize <= 0 || isNaN(distance) || !currentLocation.size) {
         document.getElementById('cannibalizationCalculationResults').style.display = 'none';
         return;
     }
-    
-    // Calcular Proximity
-    const proximity = calculateProximity(distance);
-    
-    // Calcular SizeFactor: MIN(1, (CannSize/LocSize)^0.5)
-    const sizeFactor = Math.min(1, Math.pow(cannSize / currentLocation.size, 0.5));
-    
-    // Calcular Base: 0.7 × Proximity + 0.3 × SizeFactor
-    const base = 0.7 * proximity + 0.3 * sizeFactor;
-    
-    // Calcular cannibalizationFactor: Base × Proximity × SizeFactor
-    const cannibalizationFactor = base * proximity * sizeFactor;
-    
-    // Calcular Impact: Proximity × cannibalizationFactor
-    const impact = proximity * cannibalizationFactor;
-    
-    document.getElementById('calcCannProximity').textContent = proximity.toFixed(4);
-    document.getElementById('calcCannSizeFactor').textContent = sizeFactor.toFixed(4);
-    document.getElementById('calcCannBase').textContent = base.toFixed(4);
-    document.getElementById('calcCannFactor').textContent = cannibalizationFactor.toFixed(4);
-    document.getElementById('calcCannImpact').textContent = impact.toFixed(4);
-    
-    document.getElementById('cannibalizationCalculationResults').style.display = 'block';
+
+    try {
+        // Calcular Proximity
+        const proximity = calculateProximity(distance);
+
+        // Calcular SizeFactor: MIN(1, (CannSize/LocSize)^0.5)
+        const sizeFactor = Math.min(1, Math.pow(cannSize / currentLocation.size, 0.5));
+
+        // Calcular Base: 0.7 × Proximity + 0.3 × SizeFactor
+        const base = 0.7 * proximity + 0.3 * sizeFactor;
+
+        // Calcular cannibalizationFactor: Base × Proximity × SizeFactor
+        const cannibalizationFactor = base * proximity * sizeFactor;
+
+        // Calcular Impact: Proximity × cannibalizationFactor
+        const impact = proximity * cannibalizationFactor;
+
+        document.getElementById('calcCannProximity').textContent = proximity.toFixed(4);
+        document.getElementById('calcCannSizeFactor').textContent = sizeFactor.toFixed(4);
+        document.getElementById('calcCannBase').textContent = base.toFixed(4);
+        document.getElementById('calcCannFactor').textContent = cannibalizationFactor.toFixed(4);
+        document.getElementById('calcCannImpact').textContent = impact.toFixed(4);
+
+        document.getElementById('cannibalizationCalculationResults').style.display = 'block';
+    } catch (error) {
+        console.error('Error calculating cannibalization metrics:', error);
+        document.getElementById('cannibalizationCalculationResults').style.display = 'none';
+    }
 }
 
 function handleCompetitorSubmit(e) {
     e.preventDefault();
-    
+
     const competitorId = document.getElementById('competitorId').value;
     const competitorData = {
         location_id: locationId,
         name: document.getElementById('competitorName').value,
         type: document.getElementById('competitorType').value,
         size: parseFloat(document.getElementById('competitorSize').value),
+        latitude: parseFloat(document.getElementById('competitorLatitude').value),
+        longitude: parseFloat(document.getElementById('competitorLongitude').value),
         proximity: parseFloat(document.getElementById('competitorProximity').value)
     };
-    
+
     try {
         if (competitorId) {
             updateCompetitor(parseInt(competitorId), competitorData);
         } else {
             createCompetitor(competitorData);
         }
-        
+
         closeCompetitorModal();
         // Reload data and re-render
         competitors = getCompetitorsByLocationId(locationId);
@@ -207,32 +254,34 @@ function handleCompetitorSubmit(e) {
 
 function handleCannibalizationSubmit(e) {
     e.preventDefault();
-    
+
     const cannibalizationId = document.getElementById('cannibalizationId').value;
     const cannSize = parseFloat(document.getElementById('cannibalizationSize').value);
     const distance = parseFloat(document.getElementById('cannibalizationProximity').value);
-    
+
     // Calcular cannibalizationFactor automáticamente
     const proximity = calculateProximity(distance);
     const sizeFactor = Math.min(1, Math.pow(cannSize / currentLocation.size, 0.5));
     const base = 0.7 * proximity + 0.3 * sizeFactor;
     const cannibalizationFactor = base * proximity * sizeFactor;
-    
+
     const cannibalizationData = {
         location_id: locationId,
         name: document.getElementById('cannibalizationName').value,
         size: cannSize,
+        latitude: parseFloat(document.getElementById('cannibalizationLatitude').value),
+        longitude: parseFloat(document.getElementById('cannibalizationLongitude').value),
         proximity: distance,
         cannibalizationFactor: cannibalizationFactor
     };
-    
+
     try {
         if (cannibalizationId) {
             const updated = updateCannibalization(parseInt(cannibalizationId), cannibalizationData);
         } else {
             const created = createCannibalization(cannibalizationData);
         }
-        
+
         closeCannibalizationModal();
         // Reload data and re-render
         cannibalizations = getCannibalizationsByLocationId(locationId);
@@ -250,8 +299,23 @@ function openCompetitorModal(competitor = null) {
         document.getElementById('competitorName').value = competitor.name;
         document.getElementById('competitorType').value = competitor.type;
         document.getElementById('competitorSize').value = competitor.size;
+        document.getElementById('competitorLatitude').value = competitor.latitude || '';
+        document.getElementById('competitorLongitude').value = competitor.longitude || '';
         document.getElementById('competitorProximity').value = competitor.proximity;
-        updateCalculations();
+        
+        // Recalcular distancia si hay coordenadas disponibles
+        setTimeout(() => {
+            if (competitor.latitude && competitor.longitude && currentLocation.latitude && currentLocation.longitude) {
+                const distance = calculateHaversineDistance(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    competitor.latitude,
+                    competitor.longitude
+                );
+                document.getElementById('competitorProximity').value = Math.round(distance);
+            }
+            updateCalculations();
+        }, 0);
     } else {
         document.getElementById('competitorModalTitle').textContent = 'Agregar Competidor';
         competitorForm.reset();
@@ -274,8 +338,23 @@ function openCannibalizationModal(cannibalization = null) {
         document.getElementById('cannibalizationId').value = cannibalization.id;
         document.getElementById('cannibalizationName').value = cannibalization.name;
         document.getElementById('cannibalizationSize').value = cannibalization.size;
+        document.getElementById('cannibalizationLatitude').value = cannibalization.latitude || '';
+        document.getElementById('cannibalizationLongitude').value = cannibalization.longitude || '';
         document.getElementById('cannibalizationProximity').value = cannibalization.proximity;
-        updateCannibalizationCalculations();
+        
+        // Recalcular distancia si hay coordenadas disponibles
+        setTimeout(() => {
+            if (cannibalization.latitude && cannibalization.longitude && currentLocation.latitude && currentLocation.longitude) {
+                const distance = calculateHaversineDistance(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    cannibalization.latitude,
+                    cannibalization.longitude
+                );
+                document.getElementById('cannibalizationProximity').value = Math.round(distance);
+            }
+            updateCannibalizationCalculations();
+        }, 0);
     } else {
         document.getElementById('cannibalizationModalTitle').textContent = 'Agregar Canibalización';
         cannibalizationForm.reset();
@@ -309,10 +388,10 @@ function deleteCannibalizationHandler(id) {
     if (confirm('¿Está seguro de que desea eliminar esta canibalización?')) {
         try {
             const result = deleteCannibalization(id);
-            
+
             // Obtener todas las canibalizaciones para debug
             const allCanns = getCannibalizations();
-            
+
             cannibalizations = getCannibalizationsByLocationId(locationId);
             renderEvaluation();
         } catch (error) {
@@ -325,10 +404,10 @@ function deleteCannibalizationHandler(id) {
 function switchAdjustmentTab(tabName) {
     const tabContents = document.querySelectorAll('.adjustment-tab-content');
     tabContents.forEach(content => content.classList.remove('active'));
-    
+
     const tabButtons = document.querySelectorAll('.adjustment-tab-button');
     tabButtons.forEach(button => button.classList.remove('active'));
-    
+
     if (tabName === 'competition') {
         document.getElementById('competitionTab').classList.add('active');
         tabButtons[0].classList.add('active');
@@ -340,26 +419,26 @@ function switchAdjustmentTab(tabName) {
 
 function renderEvaluation() {
     const evaluation = calculateEvaluation(currentLocation);
-    
+
     // Calculate competitors with metrics
     const competitorsWithMetrics = competitors.map(comp => {
         const metrics = calculateCompetitorMetrics(comp, currentLocation, currentZone);
         return { ...comp, metrics };
     });
-    
+
     // Calculate global competition metrics
     const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
     const competitionLevel = calculateCompetitionLevel(allImpacts);
     const competitionNorm = calculateCompetitionNorm(competitionLevel);
-    
+
     // Calculate global accessibility (promedio de todos los competidores)
     const avgAccessibility = competitorsWithMetrics.length > 0
         ? competitorsWithMetrics.reduce((sum, comp) => sum + comp.metrics.accessibility, 0) / competitorsWithMetrics.length
         : 0;
-    
+
     // Calculate global score
     const score = calculateScore(avgAccessibility, competitionNorm);
-    
+
     // Get capture range (usando promedio ponderado por accessibility o valores por defecto)
     let captureRange = { min: 0, max: 0 };
     if (competitorsWithMetrics.length > 0) {
@@ -367,17 +446,17 @@ function renderEvaluation() {
         const sortedByAccessibility = [...competitorsWithMetrics].sort((a, b) => b.metrics.accessibility - a.metrics.accessibility);
         captureRange = getCaptureRange(sortedByAccessibility[0].type, currentZone.name);
     }
-    
+
     // Calculate global share
     const share = calculateShare(score, captureRange);
-    
+
     // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
         .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
         .map(cann => {
             const proximity = calculateProximity(cann.proximity);
             const impact = proximity * cann.cannibalizationFactor;
-            return { 
+            return {
                 id: cann.id,
                 location_id: cann.location_id,
                 name: cann.name,
@@ -388,74 +467,120 @@ function renderEvaluation() {
                 impact: impact
             };
         });
-    
+
     // Calculate cannibalization level and norm
     const cannibalizationLevel = cannibalizationsWithMetrics.reduce((sum, cann) => sum + cann.impact, 0);
     const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
-    
+
     // Calculate final adjusted expenses using corrected formulas
     const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
     const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
-    
+
     // Get viability criteria and calculate viability
     const viabilityCriteria = getViabilityCriteria();
     const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
-    
+
     const container = document.getElementById('evaluationContainer');
     container.innerHTML = `
         <div class="section">
-            <h2>Información de la Localidad</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">Nombre:</span>
-                    <span class="value">${currentLocation.name}</span>
+            <h1 style="text-align: center; margin-bottom: 30px;">${currentLocation.name}</h1>
+        </div>
+
+        <div class="section viability-section">
+            <div class="viability-grid">
+                <div class="viability-column viability-criteria ${viability.color}">
+                    <h2>Viabilidad</h2>
+                    <div class="viability-status">${viability.status}</div>
+                    <div class="viability-details">
+                        <p>Mínimo viable: $${viability.minViable.toLocaleString()}</p>
+                        <p>Rango óptimo: $${viability.minViable.toLocaleString()} - $${viability.optimal.toLocaleString()}</p>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="label">Tipo:</span>
-                    <span class="value">${currentLocation.type || 'N/A'}</span>
+                <div class="viability-column viability-box">
+                    <h2>Población Efectiva</h2>
+                    <div class="viability-value">${evaluation.effectivePopulation.toFixed(2)}</div>
+                    <div class="viability-details">
+                        <p>hogares</p>
+                        <small>Factores de mercado para ${currentLocation.type}: 
+                            B=${(evaluation.marketFactors.b * 100).toFixed(0)}%, 
+                            C+=${(evaluation.marketFactors.c_plus * 100).toFixed(0)}%, 
+                            C-=${(evaluation.marketFactors.c_minus * 100).toFixed(0)}%, 
+                            D=${(evaluation.marketFactors.d * 100).toFixed(0)}%
+                        </small>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="label">Tamaño:</span>
-                    <span class="value">${currentLocation.size ? currentLocation.size.toFixed(2) + ' m²' : 'N/A'}</span>
+                <div class="viability-column viability-box">
+                    <h2>Gastos Totales Estimados</h2>
+                    <div class="viability-value">$${evaluation.totalExpenses.toFixed(2)}</div>
+                    <p class="viability-subtitle">Potencial de mercado mensual</p>
                 </div>
-                <div class="info-item">
-                    <span class="label">Ubicación:</span>
-                    <span class="value">
-                        <a href="https://www.google.com/maps?q=${currentLocation.latitude},${currentLocation.longitude}" 
-                           target="_blank" 
-                           rel="noopener noreferrer" 
-                           class="location-link">
-                            📍 ${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}
-                        </a>
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Población Total:</span>
-                    <span class="value">${evaluation.population.toFixed(2)} hogares</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Hogares 5min:</span>
-                    <span class="value">${currentLocation.homes_5min} (${currentLocation.percent_homes_5}%)</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Hogares 10min:</span>
-                    <span class="value">${currentLocation.homes_10min} (${currentLocation.percent_homes_10}%)</span>
+                <div class="viability-column viability-box">
+                    <h2>Gastos Finales Ajustados</h2>
+                    <div class="viability-value">$${finalAdjustedExpenses.toFixed(2)}</div>
+                    <p class="viability-subtitle">Después de todos los ajustes</p>
                 </div>
             </div>
         </div>
 
-        <div class="section highlight-primary">
-            <h2>🎯 Población Efectiva (Mercado Objetivo)</h2>
-            <div class="big-number-primary">${evaluation.effectivePopulation.toFixed(2)} hogares</div>
-            <div class="market-factor-info">
-                <small>Factores de mercado para ${currentLocation.type}: 
-                    B=${(evaluation.marketFactors.b * 100).toFixed(0)}%, 
-                    C+=${(evaluation.marketFactors.c_plus * 100).toFixed(0)}%, 
-                    C-=${(evaluation.marketFactors.c_minus * 100).toFixed(0)}%, 
-                    D=${(evaluation.marketFactors.d * 100).toFixed(0)}%
-                </small>
+        <div class="section">
+            <h2>Información de la Localidad</h2>
+            <div class="location-info-container">
+                <div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="label">Tipo:</span>
+                            <span class="value">${currentLocation.type || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Tamaño:</span>
+                            <span class="value">${currentLocation.size ? currentLocation.size.toFixed(2) + ' m²' : 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Provincia:</span>
+                            <span class="value">${currentLocation.provincia || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Cantón:</span>
+                            <span class="value">${currentLocation.canton || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Parroquia:</span>
+                            <span class="value">${currentLocation.parroquia || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Dirección:</span>
+                            <span class="value">${currentLocation.direccion || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Coordenadas:</span>
+                            <span class="value">
+                                <a href="https://www.google.com/maps?q=${currentLocation.latitude},${currentLocation.longitude}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="location-link">
+                                    📍 ${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}
+                                </a>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Población Total:</span>
+                            <span class="value">${evaluation.population.toFixed(2)} hogares</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Hogares 5min:</span>
+                            <span class="value">${currentLocation.homes_5min} (${currentLocation.percent_homes_5}%)</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Hogares 10min:</span>
+                            <span class="value">${currentLocation.homes_10min} (${currentLocation.percent_homes_10}%)</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div id="map" style="width: 100%; height: 400px; border-radius: 8px; border: 1px solid #ddd;"></div>
+                </div>
             </div>
         </div>
 
@@ -515,78 +640,11 @@ function renderEvaluation() {
                 </div>
             </div>
         </div>
-
-        <div class="section viability-section">
-            <div class="viability-grid">
-                <div class="viability-column viability-criteria ${viability.color}">
-                    <h2>Criterio de Viabilidad</h2>
-                    <div class="viability-status">${viability.status}</div>
-                    <div class="viability-details">
-                        <p>Mínimo viable: $${viability.minViable.toLocaleString()}</p>
-                        <p>Rango óptimo: $${viability.minViable.toLocaleString()} - $${viability.optimal.toLocaleString()}</p>
-                    </div>
-                </div>
-                <div class="viability-column viability-box">
-                    <h2>Gastos Totales Estimados</h2>
-                    <div class="viability-value">$${evaluation.totalExpenses.toFixed(2)}</div>
-                    <p class="viability-subtitle">Potencial de mercado mensual</p>
-                </div>
-                <div class="viability-column viability-box">
-                    <h2>Gasto Final Ajustado</h2>
-                    <div class="viability-value">$${finalAdjustedExpenses.toFixed(2)}</div>
-                    <p class="viability-subtitle">Después de todos los ajustes</p>
-                </div>
-            </div>
-        </div>
-
         <div class="section">
-            <h2>Detalle de Cálculos de Gastos Ajustados</h2>
-            <div class="adjustment-summary">
-                <div class="adjustment-item">
-                    <div>
-                        <span class="label">1. Gastos después de Competencia:</span>
-                        <span class="value">$${expensesAfterCompetition.toFixed(2)}</span>
-                    </div>
-                    <small class="formula-description">
-                        <p>Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</p>
-                        <p>expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</p>
-                    </small>
-                </div>
-                <div class="adjustment-item">
-                    <div>
-                        <span class="label">2. Gastos Ajustados por Share:</span>
-                        <span class="value">$${totalAdjustedExpenses.toFixed(2)}</span>
-                    </div>
-                    <small class="formula-description">
-                        <p>Formula: totalAdjustedExpenses = expensesAfterCompetition × share</p>
-                        <p>totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
-                    </small>
-                </div>
-                <div class="adjustment-item">
-                    <div>
-                        <span class="label">3. Gastos Finales (después de Canibalización):</span>
-                        <span class="value">$${finalAdjustedExpenses.toFixed(2)}</span>
-                    </div>
-                    <small class="formula-description">
-                        <p>Formula: finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationNorm)</p>
-                        <p>finalAdjustedExpenses = $${totalAdjustedExpenses.toFixed(2)} × (1 - ${cannibalizationNorm.toFixed(4)}) = $${finalAdjustedExpenses.toFixed(2)}</p>
-                    </small>
-                </div>
+            <h2>Ajustes por Competencia</h2>
+            <div class="section-header">
+                <button id="addCompetitorBtn" class="btn btn-primary">+ Agregar Competidor</button>
             </div>
-        </div>
-
-        <div class="section">
-            <h2>Ajustes</h2>
-            <div class="adjustment-tabs">
-                <button class="adjustment-tab-button active" onclick="window.switchAdjustmentTab('competition')">Ajuste por Competencia</button>
-                <button class="adjustment-tab-button" onclick="window.switchAdjustmentTab('cannibalization')">Ajuste por Canibalización</button>
-            </div>
-
-            <div id="competitionTab" class="adjustment-tab-content active">
-                <div class="section-header">
-                    <button id="addCompetitorBtn" class="btn btn-primary">+ Agregar Competidor</button>
-                </div>
-                
                 <div class="table-container">
                     <table id="competitorsTable">
                         <thead>
@@ -626,47 +684,14 @@ function renderEvaluation() {
                         </tbody>
                     </table>
                 </div>
-
-                <div class="adjustment-summary">
-                    <div class="adjustment-item">
-                        <div>
-                            <span class="label">Score:</span>
-                            <span class="value">${(score * 100).toFixed(2)}%</span>
-                        </div>
-                        <small class="formula-description">
-                            <p>Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</p>
-                            <p> competitionNorm = 1 - e^(-suma de todos los impactos) => competitionNorm = 1 - e^(-${competitionLevel.toFixed(4)}) = ${competitionNorm.toFixed(4)} </p>
-                            <p>La Competencia Normal indica que se tiene una <strong>Perdida del ${((1 - competitionNorm) * 100).toFixed(2)}% de la cuota de mercado</strong></p>
-                            <p>score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</p>
-                        </small>
-                    </div>
-                    <div class="adjustment-item">
-                        <div>
-                            <span class="label">Share:</span>
-                            <span class="value">${share.toFixed(2)}%</span>
-                        </div>
-                        <small class="formula-description">
-                            <p>Formula: share = min + (max - min) × score</p>
-                            <p>share = ${captureRange.min.toFixed(2)}% + (${captureRange.max.toFixed(2)}% - ${captureRange.min.toFixed(2)}%) × ${score.toFixed(4)} = ${share.toFixed(2)}%</p>
-                        </small>
-                    </div>
-                    <div class="adjustment-item">
-                        <div>
-                            <span class="label">Monto del Ajuste:</span>
-                            <span class="value adjustment-amount" id="adjustmentAmount">$${totalAdjustedExpenses.toFixed(2)}</span>
-                        </div>
-                        <small class="formula-description">
-                            <p>Formula: totalAdjustedExpenses = totalExpenses × (1 - competitionNorm) × share</p>
-                            <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share/100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
-                        </small>
-                    </div>
-                </div>
             </div>
+        </div>
 
-            <div id="cannibalizationTab" class="adjustment-tab-content">
-                <div class="section-header">
-                    <button id="addCannibalizationBtn" class="btn btn-primary">+ Agregar Canibalización</button>
-                </div>
+        <div class="section">
+            <h2>Ajustes por Canibalización</h2>
+            <div class="section-header">
+                <button id="addCannibalizationBtn" class="btn btn-primary">+ Agregar Canibalización</button>
+            </div>
                 
                 <div class="table-container">
                     <table id="cannibalizationTable">
@@ -703,9 +728,45 @@ function renderEvaluation() {
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
 
-                <div class="adjustment-summary">
-                    <div class="adjustment-item">
+        <div class="section">
+            <h2>Detalle de Cálculos de Gastos Ajustados</h2>
+            <div class="adjustment-summary">
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Score:</span>
+                        <span class="value">${(score * 100).toFixed(2)}%</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</p>
+                        <p> competitionNorm = 1 - e^(-suma de todos los impactos) => competitionNorm = 1 - e^(-${competitionLevel.toFixed(4)}) = ${competitionNorm.toFixed(4)} </p>
+                        <p>La Competencia Normal indica que se tiene una <strong>Perdida del ${((1 - competitionNorm) * 100).toFixed(2)}% de la cuota de mercado</strong></p>
+                        <p>score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</p>
+                    </small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Share:</span>
+                        <span class="value">${share.toFixed(2)}%</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: share = min + (max - min) × score</p>
+                        <p>share = ${captureRange.min.toFixed(2)}% + (${captureRange.max.toFixed(2)}% - ${captureRange.min.toFixed(2)}%) × ${score.toFixed(4)} = ${share.toFixed(2)}%</p>
+                    </small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Monto del Ajuste:</span>
+                        <span class="value adjustment-amount" id="adjustmentAmount">$${totalAdjustedExpenses.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: totalAdjustedExpenses = totalExpenses × (1 - competitionNorm) × share</p>
+                        <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                    </small>
+                </div>
+                <div class="adjustment-item">
                         <div>
                             <span class="label">Cannibalization Norm:</span>
                             <span class="value" id="totalCannAdjustment">${(cannibalizationNorm * 100).toFixed(2)}%</span>
@@ -726,15 +787,290 @@ function renderEvaluation() {
                             <p>cannibalizationAdjustmentAmount = $${totalAdjustedExpenses.toFixed(2)} × ${cannibalizationNorm.toFixed(4)} = $${cannibalizationAdjustmentAmount.toFixed(2)}</p>
                         </small>
                     </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Gastos después de Competencia:</span>
+                        <span class="value">$${expensesAfterCompetition.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</p>
+                        <p>expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</p>
+                    </small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Gastos Ajustados por Share:</span>
+                        <span class="value">$${totalAdjustedExpenses.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: totalAdjustedExpenses = expensesAfterCompetition × share</p>
+                        <p>totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                    </small>
+                </div>
+                <div class="adjustment-item">
+                    <div>
+                        <span class="label">Gastos Finales (después de Canibalización):</span>
+                        <span class="value">$${finalAdjustedExpenses.toFixed(2)}</span>
+                    </div>
+                    <small class="formula-description">
+                        <p>Formula: finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationNorm)</p>
+                        <p>finalAdjustedExpenses = $${totalAdjustedExpenses.toFixed(2)} × (1 - ${cannibalizationNorm.toFixed(4)}) = $${finalAdjustedExpenses.toFixed(2)}</p>
+                    </small>
                 </div>
             </div>
         </div>
     `;
-    
+
     // Re-attach event listeners for dynamically created buttons
     document.getElementById('addCompetitorBtn').onclick = () => openCompetitorModal();
     document.getElementById('addCannibalizationBtn').onclick = () => openCannibalizationModal();
+
+    // Initialize map with markers
+    initializeMap();
 }
+
+function initializeMap() {
+    setTimeout(() => {
+        const mapDiv = document.getElementById('map');
+        if (!mapDiv) return;
+
+        const lat = currentLocation.latitude;
+        const lon = currentLocation.longitude;
+
+        // Limpiar mapa anterior si existe
+        mapDiv.innerHTML = '';
+
+        // Crear mapa con Leaflet
+        const map = L.map('map').setView([lat, lon], 15);
+
+        // Agregar tiles de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Agregar control de escala (muestra distancia en metros/km)
+        L.control.scale({
+            position: 'bottomleft',
+            metric: true,
+            imperial: false,
+            maxWidth: 200
+        }).addTo(map);
+
+        // Icono personalizado para la localidad (verde)
+        const locationIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                    <path fill="#22c55e" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+            `),
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        // Icono para competidores (rojo)
+        const competitorIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                    <path fill="#ef4444" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+            `),
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28]
+        });
+
+        // Icono para canibalizadores (azul)
+        const cannibalizationIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                    <path fill="#3b82f6" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+            `),
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28]
+        });
+
+        // Marcador de la localidad principal
+        L.marker([lat, lon], { icon: locationIcon })
+            .addTo(map)
+            .bindPopup(`<b>${currentLocation.name}</b><br>Localidad Principal`);
+
+        // Agregar marcadores de competidores (rojos)
+        competitors.forEach(comp => {
+            if (comp.latitude && comp.longitude) {
+                L.marker([comp.latitude, comp.longitude], { icon: competitorIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>${comp.name}</b><br>Competidor<br>${comp.type}<br>${Math.round(comp.proximity)}m`);
+            }
+        });
+
+        // Agregar marcadores de canibalizadores (azules)
+        cannibalizations.forEach(cann => {
+            if (cann.latitude && cann.longitude) {
+                L.marker([cann.latitude, cann.longitude], { icon: cannibalizationIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>${cann.name}</b><br>Canibalizador<br>${Math.round(cann.proximity)}m`);
+            }
+        });
+
+        // Ajustar vista para incluir todos los marcadores
+        const allMarkers = [
+            [lat, lon],
+            ...competitors.filter(c => c.latitude && c.longitude).map(c => [c.latitude, c.longitude]),
+            ...cannibalizations.filter(c => c.latitude && c.longitude).map(c => [c.latitude, c.longitude])
+        ];
+
+        if (allMarkers.length > 1) {
+            const bounds = L.latLngBounds(allMarkers);
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Agregar funcionalidad de clic derecho para añadir competidores/canibalizadores
+        map.on('contextmenu', function(e) {
+            const clickedLat = e.latlng.lat;
+            const clickedLon = e.latlng.lng;
+            
+            // Calcular distancia desde la localidad
+            const distance = calculateHaversineDistance(
+                currentLocation.latitude,
+                currentLocation.longitude,
+                clickedLat,
+                clickedLon
+            );
+
+            // Mostrar popup inicial con "Cargando..."
+            const loadingPopup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent(`
+                    <div style="text-align: center; min-width: 200px;">
+                        <p style="margin: 0; padding: 20px;">⏳ Obteniendo información del lugar...</p>
+                    </div>
+                `)
+                .openOn(map);
+
+            // Obtener nombre del lugar usando geocodificación inversa (Nominatim)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${clickedLat}&lon=${clickedLon}&zoom=18&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    // Extraer nombre del lugar
+                    let placeName = '';
+                    if (data.address) {
+                        // Priorizar: tienda/comercio > edificio > calle
+                        placeName = data.address.shop || 
+                                   data.address.amenity || 
+                                   data.address.building || 
+                                   data.address.road || 
+                                   data.name || 
+                                   'Ubicación sin nombre';
+                    } else {
+                        placeName = data.display_name?.split(',')[0] || 'Ubicación sin nombre';
+                    }
+
+                    // Guardar el nombre para usarlo después
+                    window.lastClickedPlaceName = placeName;
+
+                    // Actualizar popup con la información
+                    const popupContent = `
+                        <div style="text-align: center; min-width: 220px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold;">Agregar en esta ubicación</p>
+                            <p style="margin: 0 0 5px 0; font-size: 13px; color: #2563eb; font-weight: 600;">
+                                📍 ${placeName}
+                            </p>
+                            <p style="margin: 0 0 10px 0; font-size: 11px; color: #666;">
+                                ${clickedLat.toFixed(6)}, ${clickedLon.toFixed(6)}<br>
+                                📏 ${Math.round(distance)}m de la localidad
+                            </p>
+                            <button onclick="window.addCompetitorFromMap(${clickedLat}, ${clickedLon}, ${Math.round(distance)}, '${placeName.replace(/'/g, "\\'")}')" 
+                                    style="width: 100%; padding: 8px; margin-bottom: 5px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                🏪 Agregar Competidor
+                            </button>
+                            <button onclick="window.addCannibalizationFromMap(${clickedLat}, ${clickedLon}, ${Math.round(distance)}, '${placeName.replace(/'/g, "\\'")}')" 
+                                    style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                🔄 Agregar Canibalizador
+                            </button>
+                        </div>
+                    `;
+
+                    loadingPopup.setContent(popupContent);
+                })
+                .catch(error => {
+                    console.error('Error al obtener información del lugar:', error);
+                    // Si falla, mostrar popup sin nombre
+                    const popupContent = `
+                        <div style="text-align: center; min-width: 200px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold;">Agregar en esta ubicación</p>
+                            <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">
+                                📍 ${clickedLat.toFixed(6)}, ${clickedLon.toFixed(6)}<br>
+                                📏 ${Math.round(distance)}m de la localidad
+                            </p>
+                            <button onclick="window.addCompetitorFromMap(${clickedLat}, ${clickedLon}, ${Math.round(distance)}, '')" 
+                                    style="width: 100%; padding: 8px; margin-bottom: 5px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                🏪 Agregar Competidor
+                            </button>
+                            <button onclick="window.addCannibalizationFromMap(${clickedLat}, ${clickedLon}, ${Math.round(distance)}, '')" 
+                                    style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                                🔄 Agregar Canibalizador
+                            </button>
+                        </div>
+                    `;
+                    loadingPopup.setContent(popupContent);
+                });
+        });
+
+        // Guardar referencia al mapa para poder actualizarlo después
+        window.currentMap = map;
+    }, 100);
+}
+
+// Funciones globales para agregar desde el mapa
+window.addCompetitorFromMap = function(lat, lon, distance, placeName = '') {
+    // Pre-llenar el formulario con las coordenadas y nombre
+    openCompetitorModal();
+    setTimeout(() => {
+        if (placeName) {
+            document.getElementById('competitorName').value = placeName;
+        }
+        document.getElementById('competitorLatitude').value = lat.toFixed(6);
+        document.getElementById('competitorLongitude').value = lon.toFixed(6);
+        document.getElementById('competitorProximity').value = distance;
+        // Cerrar el popup del mapa
+        if (window.currentMap) {
+            window.currentMap.closePopup();
+        }
+        // Hacer foco en el campo de nombre para que el usuario pueda editarlo si quiere
+        if (placeName) {
+            document.getElementById('competitorType').focus();
+        } else {
+            document.getElementById('competitorName').focus();
+        }
+    }, 100);
+};
+
+window.addCannibalizationFromMap = function(lat, lon, distance, placeName = '') {
+    // Pre-llenar el formulario con las coordenadas y nombre
+    openCannibalizationModal();
+    setTimeout(() => {
+        if (placeName) {
+            document.getElementById('cannibalizationName').value = placeName;
+        }
+        document.getElementById('cannibalizationLatitude').value = lat.toFixed(6);
+        document.getElementById('cannibalizationLongitude').value = lon.toFixed(6);
+        document.getElementById('cannibalizationProximity').value = distance;
+        // Cerrar el popup del mapa
+        if (window.currentMap) {
+            window.currentMap.closePopup();
+        }
+        // Hacer foco en el campo de tamaño si ya tiene nombre, sino en nombre
+        if (placeName) {
+            document.getElementById('cannibalizationSize').focus();
+        } else {
+            document.getElementById('cannibalizationName').focus();
+        }
+    }, 100);
+};
 
 function editCompetitorHandler(id) {
     const competitor = competitors.find(c => c.id === id);
@@ -760,15 +1096,19 @@ window.deleteCannibalizationHandler = deleteCannibalizationHandler;
 // Export evaluation results
 function exportEvaluationResults() {
     const evaluation = calculateEvaluation(currentLocation);
-    
+
     // Calculate competitors with metrics
     const competitorsWithMetrics = competitors.map(comp => {
         const metrics = calculateCompetitorMetrics(comp, currentLocation, currentZone);
-        return { 
+        return {
             id: comp.id,
             name: comp.name,
             type: comp.type,
             size: comp.size,
+            coordinates: {
+                latitude: comp.latitude || null,
+                longitude: comp.longitude || null
+            },
             proximity: comp.proximity,
             metrics: {
                 typeSimilarity: metrics.typeSimilarity,
@@ -780,62 +1120,66 @@ function exportEvaluationResults() {
             }
         };
     });
-    
+
     // Calculate global competition metrics
     const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
     const competitionLevel = calculateCompetitionLevel(allImpacts);
     const competitionNorm = calculateCompetitionNorm(competitionLevel);
-    
+
     // Calculate global accessibility
     const avgAccessibility = competitorsWithMetrics.length > 0
         ? competitorsWithMetrics.reduce((sum, comp) => sum + comp.metrics.accessibility, 0) / competitorsWithMetrics.length
         : 0;
-    
+
     // Calculate global score
     const score = calculateScore(avgAccessibility, competitionNorm);
-    
+
     // Get capture range
     let captureRange = { min: 0, max: 0 };
     if (competitorsWithMetrics.length > 0) {
         const sortedByAccessibility = [...competitorsWithMetrics].sort((a, b) => b.metrics.accessibility - a.metrics.accessibility);
         captureRange = getCaptureRange(sortedByAccessibility[0].type, currentZone.name);
     }
-    
+
     // Calculate global share
     const share = calculateShare(score, captureRange);
-    
+
     // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
         .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
         .map(cann => {
             const proximity = calculateProximity(cann.proximity);
             const impact = proximity * cann.cannibalizationFactor;
-            return { 
+            return {
                 id: cann.id,
                 location_id: cann.location_id,
                 name: cann.name,
                 size: cann.size,
+                coordinates: {
+                    latitude: cann.latitude || null,
+                    longitude: cann.longitude || null
+                },
                 proximity: cann.proximity,
                 cannibalizationFactor: cann.cannibalizationFactor,
                 proximityValue: proximity,
                 impact: impact
             };
         });
-    
+
     // Calculate cannibalization level and norm
     const cannibalizationLevel = cannibalizationsWithMetrics.reduce((sum, cann) => sum + cann.impact, 0);
     const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
-    
+
     // Calculate final adjusted expenses using corrected formulas
     const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
     const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
-    
+
     // Get viability criteria and calculate viability
     const viabilityCriteria = getViabilityCriteria();
     const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
-    
+
     // Build complete evaluation export
     const exportData = {
         metadata: {
@@ -852,6 +1196,12 @@ function exportEvaluationResults() {
             coordinates: {
                 latitude: currentLocation.latitude,
                 longitude: currentLocation.longitude
+            },
+            address: {
+                provincia: currentLocation.provincia || '',
+                canton: currentLocation.canton || '',
+                parroquia: currentLocation.parroquia || '',
+                direccion: currentLocation.direccion || ''
             },
             mobilityZone: {
                 id: currentZone.id,
@@ -973,7 +1323,7 @@ function exportEvaluationResults() {
             }
         }
     };
-    
+
     // Create and download JSON file
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -985,7 +1335,7 @@ function exportEvaluationResults() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     alert('✅ Resultados de evaluación exportados exitosamente');
 }
 

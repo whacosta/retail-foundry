@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evaluación - Retail Foundry</title>
     <link rel="stylesheet" href="static/css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <div class="container">
@@ -47,9 +49,20 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="competitorLatitude">Latitud *</label>
+                        <input type="number" id="competitorLatitude" step="any" min="-90" max="90" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="competitorLongitude">Longitud *</label>
+                        <input type="number" id="competitorLongitude" step="any" min="-180" max="180" required>
+                    </div>
+                </div>
+
                 <div class="form-group input-with-symbol" data-symbol="m">
-                    <label for="competitorProximity">Distancia (metros) *</label>
-                    <input type="number" id="competitorProximity" step="1" min="0" required>
+                    <label for="competitorProximity">Distancia (metros)</label>
+                    <input type="number" id="competitorProximity" step="1" min="0" readonly class="readonly-input">
                 </div>
 
                 <div id="calculationResults" class="calculation-results" style="display: none;">
@@ -114,9 +127,20 @@
                     <input type="number" id="cannibalizationSize" step="0.01" min="0" required>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cannibalizationLatitude">Latitud *</label>
+                        <input type="number" id="cannibalizationLatitude" step="any" min="-90" max="90" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cannibalizationLongitude">Longitud *</label>
+                        <input type="number" id="cannibalizationLongitude" step="any" min="-180" max="180" required>
+                    </div>
+                </div>
+
                 <div class="form-group input-with-symbol" data-symbol="m">
-                    <label for="cannibalizationProximity">Distancia (metros) *</label>
-                    <input type="number" id="cannibalizationProximity" step="1" min="0" required>
+                    <label for="cannibalizationProximity">Distancia (metros)</label>
+                    <input type="number" id="cannibalizationProximity" step="1" min="0" readonly class="readonly-input">
                 </div>
 
                 <div id="cannibalizationCalculationResults" class="calculation-results" style="display: none;">

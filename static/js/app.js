@@ -1,6 +1,14 @@
 // App principal para Retail Foundry - SPA Version
-import { COMPETITOR_TYPES } from './constants.js';
+import { 
+    COMPETITOR_TYPES, 
+    TYPE_AFFINITY_MATRIX, 
+    CAPTURE_RANGES, 
+    ACCESSIBILITY_VALUES,
+    EFFECTIVE_MARKET_FACTORS,
+    DISTANCE_THRESHOLDS
+} from './constants.js';
 import { initStorage, getMobilityZones, updateMobilityZone, searchLocations, createLocation, updateLocation, deleteLocation, getLocationById, exportData, importData, getGlobalConfig, updateGlobalConfig, getViabilityCriteria, updateViabilityCriteria } from './storage.js';
+import { exportToExcel, importFromExcel } from './excelHandler.js';
 
 // Inicializar storage al cargar
 initStorage();
@@ -18,6 +26,7 @@ const newLocationBtn = document.getElementById('newLocationBtn');
 const configBtn = document.getElementById('configBtn');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
+const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 const importFileInput = document.getElementById('importFileInput');
 const closeBtn = document.getElementsByClassName('close')[0];
 const closeConfigBtn = document.getElementsByClassName('close-config')[0];
@@ -51,6 +60,16 @@ exportBtn.onclick = () => {
 
 importBtn.onclick = () => {
     importFileInput.click();
+};
+
+downloadTemplateBtn.onclick = () => {
+    // Descargar directamente el archivo de ejemplo
+    const link = document.createElement('a');
+    link.href = 'static/docs/sample_import.xlsx';
+    link.download = 'plantilla-importacion.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 
 importFileInput.onchange = (event) => {
@@ -166,6 +185,10 @@ locationForm.addEventListener('submit', async (e) => {
         size: parseFloat(document.getElementById('locationSize').value),
         latitude: latitude,
         longitude: longitude,
+        provincia: document.getElementById('provincia').value,
+        canton: document.getElementById('canton').value,
+        parroquia: document.getElementById('parroquia').value,
+        direccion: document.getElementById('direccion').value,
         homes_5min: parseInt(document.getElementById('homes5Min').value),
         percent_homes_5: parseFloat(document.getElementById('percentHomes5').value),
         homes_10min: parseInt(document.getElementById('homes10Min').value),
@@ -209,6 +232,10 @@ function openModal(location = null) {
         document.getElementById('locationSize').value = location.size || '';
         document.getElementById('latitude').value = location.latitude;
         document.getElementById('longitude').value = location.longitude;
+        document.getElementById('provincia').value = location.provincia || '';
+        document.getElementById('canton').value = location.canton || '';
+        document.getElementById('parroquia').value = location.parroquia || '';
+        document.getElementById('direccion').value = location.direccion || '';
         document.getElementById('mobilityZone').value = location.mobility_zone_id || 1;
         document.getElementById('homes5Min').value = location.homes_5min;
         document.getElementById('percentHomes5').value = location.percent_homes_5;
@@ -433,6 +460,10 @@ function switchMainTab(section) {
         document.querySelector('.main-tabs .tab-button:nth-child(3)').classList.add('active');
         document.getElementById('viabilitySection').classList.add('active');
         loadViabilityConfig();
+    } else if (section === 'constants') {
+        document.querySelector('.main-tabs .tab-button:nth-child(4)').classList.add('active');
+        document.getElementById('constantsSection').classList.add('active');
+        loadConstantsConfig();
     }
 }
 
@@ -486,6 +517,219 @@ globalConfigForm.addEventListener('submit', async (e) => {
         alert('❌ Error al guardar la configuración');
     }
 });
+
+// Configuración de Constantes del Sistema (solo lectura)
+function loadConstantsConfig() {
+    const container = document.getElementById('constantsConfig');
+    
+    let html = `
+        <!-- Matriz de Afinidad por Tipo -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">📊 Matriz de Afinidad por Tipo (Similarity Type)</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Define la similitud entre diferentes tipos de competidores. Valores entre 0 y 1.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            ${COMPETITOR_TYPES.map(type => `<th>${type}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${COMPETITOR_TYPES.map(rowType => `
+                            <tr>
+                                <td><strong>${rowType}</strong></td>
+                                ${COMPETITOR_TYPES.map(colType => `
+                                    <td style="text-align: center;">${TYPE_AFFINITY_MATRIX[rowType][colType].toFixed(2)}</td>
+                                `).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rangos de Captura por Tipo y Zona -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">🎯 Rangos de Captura de Mercado (%)</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Porcentaje mínimo y máximo de captura de mercado según tipo de formato y zona de movilidad.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Formato</th>
+                            <th>Zona Popular</th>
+                            <th>Zona Media</th>
+                            <th>Zona Alta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${COMPETITOR_TYPES.map(type => `
+                            <tr>
+                                <td><strong>${type}</strong></td>
+                                <td>${CAPTURE_RANGES[type].popular.min}% - ${CAPTURE_RANGES[type].popular.max}%</td>
+                                <td>${CAPTURE_RANGES[type].media.min}% - ${CAPTURE_RANGES[type].media.max}%</td>
+                                <td>${CAPTURE_RANGES[type].alta.min}% - ${CAPTURE_RANGES[type].alta.max}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Valores de Accesibilidad -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">🚶 Valores de Accesibilidad por Tipo</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Factor de accesibilidad según el tipo de formato. Valores entre 0 y 1.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Formato</th>
+                            <th>Accesibilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${COMPETITOR_TYPES.map(type => `
+                            <tr>
+                                <td><strong>${type}</strong></td>
+                                <td style="text-align: center;">${ACCESSIBILITY_VALUES[type].toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Factores de Mercado Efectivo -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">👥 Factores de Mercado Efectivo por NSE</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Porcentaje de la población de cada NSE que es mercado efectivo para cada tipo de formato.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Formato</th>
+                            <th>NSE B</th>
+                            <th>NSE C+</th>
+                            <th>NSE C-</th>
+                            <th>NSE D</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${COMPETITOR_TYPES.map(type => `
+                            <tr>
+                                <td><strong>${type}</strong></td>
+                                <td style="text-align: center;">${(EFFECTIVE_MARKET_FACTORS[type].b * 100).toFixed(0)}%</td>
+                                <td style="text-align: center;">${(EFFECTIVE_MARKET_FACTORS[type].c_plus * 100).toFixed(0)}%</td>
+                                <td style="text-align: center;">${(EFFECTIVE_MARKET_FACTORS[type].c_minus * 100).toFixed(0)}%</td>
+                                <td style="text-align: center;">${(EFFECTIVE_MARKET_FACTORS[type].d * 100).toFixed(0)}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Umbrales de Distancia -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">📏 Umbrales de Distancia</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Distancias de referencia utilizadas en los cálculos de proximidad.
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Distancia (metros)</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cercano</strong></td>
+                            <td style="text-align: center;">≤ ${DISTANCE_THRESHOLDS.close}m</td>
+                            <td>Competidor muy próximo</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Medio</strong></td>
+                            <td style="text-align: center;">≤ ${DISTANCE_THRESHOLDS.medium}m</td>
+                            <td>Competidor a distancia media</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lejano</strong></td>
+                            <td style="text-align: center;">> ${DISTANCE_THRESHOLDS.medium}m</td>
+                            <td>Competidor distante</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Fórmulas de Cálculo -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: #667eea; margin-bottom: 10px;">🧮 Fórmulas de Cálculo Principales</h4>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Fórmulas utilizadas en el sistema para calcular métricas clave.
+            </p>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Proximity (Proximidad):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        proximity = 1 / (1 + distance / 300)
+                    </code>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Size Similarity (Similitud de Tamaño):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        sizeSimilarity = MIN(1, (CompetitorSize / LocationSize)^0.5)
+                    </code>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Affinity (Afinidad):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        affinity = typeSimilarity × sizeSimilarity
+                    </code>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Impact (Impacto):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        impact = affinity × proximity
+                    </code>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Competition Norm (Normalización de Competencia):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        competitionNorm = 1 - e^(-Σimpacts)
+                    </code>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #333;">Score (Puntuación):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)
+                    </code>
+                </div>
+                <div>
+                    <strong style="color: #333;">Share (Participación de Mercado):</strong>
+                    <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                        share = min + (max - min) × score
+                    </code>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
 
 // Configuración de Criterios de Viabilidad
 function loadViabilityConfig() {
@@ -573,135 +817,78 @@ viabilityConfigForm.addEventListener('submit', async (e) => {
 });
 
 // Funciones de Importación/Exportación
-function handleExportData() {
+async function handleExportData() {
     try {
-        // Obtener checkboxes seleccionados
-        const selectedCheckboxes = document.querySelectorAll('.location-checkbox:checked');
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.locationId));
+        const confirmExport = confirm('¿Desea exportar TODAS las localidades a Excel?');
+        if (!confirmExport) return;
         
-        let data;
-        
-        if (selectedIds.length === 0) {
-            // Si no hay selección, exportar todo
-            const confirmAll = confirm('No hay localidades seleccionadas.\n\n¿Desea exportar TODAS las localidades?');
-            if (!confirmAll) return;
-            
-            data = exportData();
-        } else {
-            // Exportar solo las seleccionadas
-            const allData = exportData();
-            
-            // Filtrar localidades seleccionadas
-            const selectedLocations = allData.locations.filter(loc => selectedIds.includes(loc.id));
-            
-            // Filtrar competidores y canibalizaciones de las localidades seleccionadas
-            const selectedCompetitors = allData.competitors.filter(comp => selectedIds.includes(comp.location_id));
-            const selectedCannibalizations = allData.cannibalizations.filter(cann => selectedIds.includes(cann.location_id));
-            
-            data = {
-                locations: selectedLocations,
-                competitors: selectedCompetitors,
-                cannibalizations: selectedCannibalizations,
-                mobilityZones: allData.mobilityZones,
-                globalConfig: allData.globalConfig
-            };
-            
-            // Confirmar exportación
-            const confirmMsg = `Se exportarán:\n\n` +
-                `📍 ${selectedLocations.length} localidades seleccionadas\n` +
-                `🏪 ${selectedCompetitors.length} competidores\n` +
-                `🔄 ${selectedCannibalizations.length} canibalizaciones\n\n` +
-                `¿Continuar con la exportación?`;
-            
-            if (!confirm(confirmMsg)) return;
-        }
-        
-        const dataStr = JSON.stringify(data, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        const filename = selectedIds.length > 0 
-            ? `retail-foundry-${selectedIds.length}-localidades-${new Date().toISOString().split('T')[0]}.json`
-            : `retail-foundry-backup-${new Date().toISOString().split('T')[0]}.json`;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        alert('✅ Datos exportados exitosamente');
+        const filename = await exportToExcel();
+        alert(`✅ Datos exportados exitosamente a ${filename}`);
     } catch (error) {
         console.error('Error al exportar datos:', error);
         alert('❌ Error al exportar los datos. Por favor, intente nuevamente.');
     }
 }
 
-function handleImportData(event) {
+async function handleImportData(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    if (!file.name.endsWith('.json')) {
-        alert('❌ Por favor, seleccione un archivo JSON válido.');
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        alert('❌ Por favor, seleccione un archivo Excel válido (.xlsx o .xls).');
         event.target.value = '';
         return;
     }
     
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            
-            // Validar estructura básica
-            if (!data.locations || !data.competitors || !data.cannibalizations || !data.mobilityZones) {
-                throw new Error('Estructura de datos inválida');
-            }
-            
-            // Preguntar modo de importación
-            const modeMsg = `Se importarán:\n\n` +
-                `📍 Localidades: ${data.locations.length}\n` +
-                `🏪 Competidores: ${data.competitors.length}\n` +
-                `🔄 Canibalizaciones: ${data.cannibalizations.length}\n\n` +
-                `¿Cómo desea importar?\n\n` +
-                `✅ ACEPTAR = Agregar a los datos existentes\n` +
-                `❌ CANCELAR = Reemplazar todos los datos`;
-            
-            const addMode = confirm(modeMsg);
-            
-            // Confirmar la acción
-            const actionMsg = addMode 
-                ? '¿Confirma que desea AGREGAR estos datos a los existentes?'
-                : '⚠️ ¿Confirma que desea REEMPLAZAR todos los datos actuales?\n\nEsta acción no se puede deshacer.';
-            
-            if (confirm(actionMsg)) {
-                importData(data, !addMode); // !addMode = replaceMode
-                
-                // Recargar datos en la interfaz
-                loadMobilityZones();
-                loadLocations();
-                
-                const successMsg = addMode 
-                    ? '✅ Datos agregados exitosamente'
-                    : '✅ Datos reemplazados exitosamente';
-                alert(successMsg);
-            }
-        } catch (error) {
-            console.error('Error al importar datos:', error);
-            alert('❌ Error al importar los datos. Verifique que el archivo sea válido.');
-        }
+    try {
+        const data = await importFromExcel(file);
         
-        // Limpiar el input
-        event.target.value = '';
-    };
+        const confirmMsg = `Se importarán:\n\n` +
+            `📍 Localidades: ${data.locations.length}\n` +
+            `🏪 Competidores: ${data.competitors.length}\n` +
+            `🔄 Canibalizaciones: ${data.cannibalizations.length}\n\n` +
+            `¿Confirma la importación?`;
+        
+        if (confirm(confirmMsg)) {
+            importData(data, false);
+            loadMobilityZones();
+            loadLocations();
+            alert('✅ Datos importados exitosamente');
+        }
+    } catch (error) {
+        if (error.type === 'duplicate') {
+            const continueImport = confirm(error.message + '\n\n¿Desea continuar con la importación de las demás localidades?');
+            
+            if (continueImport) {
+                const { locationsRaw, competitorsRaw, cannibalizationsRaw } = error.data;
+                const filteredLocations = locationsRaw.filter(loc => !error.duplicateIds.includes(loc.ID));
+                
+                // Re-import without duplicates
+                try {
+                    const file2 = event.target.files[0];
+                    const data = await importFromExcel(file2);
+                    const filtered = {
+                        locations: data.locations.filter(loc => !error.duplicateIds.includes(loc.id)),
+                        competitors: data.competitors.filter(comp => !error.duplicateIds.includes(comp.location_id)),
+                        cannibalizations: data.cannibalizations.filter(cann => !error.duplicateIds.includes(cann.location_id))
+                    };
+                    
+                    importData(filtered, false);
+                    loadMobilityZones();
+                    loadLocations();
+                    alert(`✅ Se importaron ${filtered.locations.length} localidades (${error.duplicateIds.length} duplicadas omitidas)`);
+                } catch (err) {
+                    console.error('Error:', err);
+                    alert('❌ Error al importar los datos.');
+                }
+            }
+        } else {
+            console.error('Error al importar datos:', error);
+            alert('❌ ' + (error.message || 'Error al importar los datos. Verifique que el archivo sea válido.'));
+        }
+    }
     
-    reader.onerror = () => {
-        alert('❌ Error al leer el archivo.');
-        event.target.value = '';
-    };
-    
-    reader.readAsText(file);
+    event.target.value = '';
 }
 
 // Exponer funciones globalmente para onclick handlers
