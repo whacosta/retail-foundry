@@ -238,14 +238,12 @@ function openModal(location = null) {
         document.getElementById('direccion').value = location.direccion || '';
         document.getElementById('mobilityZone').value = location.mobility_zone_id || 1;
         document.getElementById('homes5Min').value = location.homes_5min;
-        document.getElementById('percentHomes5').value = location.percent_homes_5;
         document.getElementById('homes10Min').value = location.homes_10min;
-        document.getElementById('percentHomes10').value = location.percent_homes_10;
         document.getElementById('percentNSED').value = location.percent_nse_d;
         document.getElementById('percentNSECMinus').value = location.percent_nse_c_minus;
         document.getElementById('percentNSECPlus').value = location.percent_nse_c_plus;
         document.getElementById('percentNSEB').value = location.percent_nse_b;
-        document.getElementById('percentExpenses').value = location.percent_expenses;
+        updatePercentagesFromZone(location.mobility_zone_id || 1);
     } else {
         document.getElementById('modalTitle').textContent = 'Nueva Localidad';
         locationForm.reset();
