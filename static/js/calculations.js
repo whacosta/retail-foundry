@@ -215,11 +215,12 @@ export function calculateCompetitorMetrics(competitor, location, zone) {
  * @param {object} location - Objeto localidad
  * @returns {object} Objeto con población total y efectiva
  */
-export function calculateEffectivePopulation(location) {
+export function calculateEffectivePopulation(location, zone) {
     // Población total (hogares totales)
+    // Los porcentajes de hogares vienen de la zona de movilidad
     const totalPopulation = 
-        location.homes_5min * (location.percent_homes_5 / 100.0) + 
-        location.homes_10min * (location.percent_homes_10 / 100.0);
+        location.homes_5min * (zone.percent_homes_5 / 100.0) + 
+        location.homes_10min * (zone.percent_homes_10 / 100.0);
     
     // Hogares por NSE
     const homesD = totalPopulation * (location.percent_nse_d / 100.0);
@@ -254,20 +255,30 @@ export function calculateEffectivePopulation(location) {
 }
 
 /**
- * Calcula la evaluación de una localidad
+ * Calcula la evaluación completa de una localidad
  * @param {object} location - Objeto localidad
+ * @param {object} zone - Zona de movilidad de la localidad
+ * @param {object} competitors - Array de competidores (opcional)
+ * @param {object} cannibalizations - Array de canibalizaciones (opcional)
+ * @param {object} globalConfig - Configuración global con ingresos NSE (opcional)
  * @returns {object} Objeto con la evaluación
  */
-export function calculateEvaluation(location) {
+export function calculateEvaluation(location, zone, competitors = [], cannibalizations = [], globalConfig = null) {
     // Calcular población total y efectiva
-    const populationData = calculateEffectivePopulation(location);
+    const populationData = calculateEffectivePopulation(location, zone);
+    
+    // Usar ingresos de globalConfig si está disponible, sino usar valores por defecto
+    const incomeD = globalConfig?.income_d || 450;
+    const incomeCMinus = globalConfig?.income_c_minus || 650;
+    const incomeCPlus = globalConfig?.income_c_plus || 950;
+    const incomeB = globalConfig?.income_b || 1500;
     
     // Usar población efectiva para los cálculos de gastos
-    const expensesPercent = location.percent_expenses / 100.0;
-    const avgExpensesD = populationData.effectiveHomesD * location.income_d * expensesPercent;
-    const avgExpensesCMinus = populationData.effectiveHomesCMinus * location.income_c_minus * expensesPercent;
-    const avgExpensesCPlus = populationData.effectiveHomesCPlus * location.income_c_plus * expensesPercent;
-    const avgExpensesB = populationData.effectiveHomesB * location.income_b * expensesPercent;
+    const expensesPercent = zone.percent_expenses / 100.0;
+    const avgExpensesD = populationData.effectiveHomesD * incomeD * expensesPercent;
+    const avgExpensesCMinus = populationData.effectiveHomesCMinus * incomeCMinus * expensesPercent;
+    const avgExpensesCPlus = populationData.effectiveHomesCPlus * incomeCPlus * expensesPercent;
+    const avgExpensesB = populationData.effectiveHomesB * incomeB * expensesPercent;
     
     const totalExpenses = avgExpensesD + avgExpensesCMinus + avgExpensesCPlus + avgExpensesB;
     

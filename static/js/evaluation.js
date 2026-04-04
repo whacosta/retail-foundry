@@ -12,7 +12,8 @@ import {
     createCannibalization,
     updateCannibalization,
     deleteCannibalization,
-    getViabilityCriteria
+    getViabilityCriteria,
+    getGlobalConfig
 } from './storage.js';
 import {
     calculateEvaluation,
@@ -418,7 +419,9 @@ function switchAdjustmentTab(tabName) {
 }
 
 function renderEvaluation() {
-    const evaluation = calculateEvaluation(currentLocation);
+    const viabilityCriteria = getViabilityCriteria();
+    const globalConfig = getGlobalConfig();
+    const evaluation = calculateEvaluation(currentLocation, currentZone, competitors, cannibalizations, globalConfig);
 
     // Calculate competitors with metrics
     const competitorsWithMetrics = competitors.map(comp => {
@@ -452,17 +455,28 @@ function renderEvaluation() {
 
     // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
-        .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
+        .filter(cann => cann.proximity !== undefined)
         .map(cann => {
             const proximity = calculateProximity(cann.proximity);
-            const impact = proximity * cann.cannibalizationFactor;
+            
+            // Calcular cannibalizationFactor si no existe
+            let cannibalizationFactor = cann.cannibalizationFactor;
+            if (!cannibalizationFactor) {
+                const cannSize = cann.size || 0;
+                const locSize = currentLocation.size || 1;
+                const sizeFactor = cannSize > 0 ? Math.min(1, Math.pow(cannSize / locSize, 0.5)) : 0;
+                const base = 0.7 * proximity + 0.3 * sizeFactor;
+                cannibalizationFactor = base * proximity * sizeFactor;
+            }
+            
+            const impact = proximity * cannibalizationFactor;
             return {
                 id: cann.id,
                 location_id: cann.location_id,
                 name: cann.name,
-                size: cann.size,
+                size: cann.size || 0,
                 proximity: cann.proximity,
-                cannibalizationFactor: cann.cannibalizationFactor,
+                cannibalizationFactor: cannibalizationFactor,
                 proximityValue: proximity,
                 impact: impact
             };
@@ -478,8 +492,7 @@ function renderEvaluation() {
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
 
-    // Get viability criteria and calculate viability
-    const viabilityCriteria = getViabilityCriteria();
+    // Calculate viability (using viabilityCriteria from top of function)
     const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
 
     const container = document.getElementById('evaluationContainer');
@@ -570,11 +583,11 @@ function renderEvaluation() {
                         </div>
                         <div class="info-item">
                             <span class="label">Hogares 5min:</span>
-                            <span class="value">${currentLocation.homes_5min} (${currentLocation.percent_homes_5}%)</span>
+                            <span class="value">${currentLocation.homes_5min} (${currentZone.percent_homes_5}%)</span>
                         </div>
                         <div class="info-item">
                             <span class="label">Hogares 10min:</span>
-                            <span class="value">${currentLocation.homes_10min} (${currentLocation.percent_homes_10}%)</span>
+                            <span class="value">${currentLocation.homes_10min} (${currentZone.percent_homes_10}%)</span>
                         </div>
                     </div>
                 </div>
@@ -592,34 +605,34 @@ function renderEvaluation() {
                     <div class="nse-percent">${currentLocation.percent_nse_d}%</div>
                     <div class="nse-homes">${evaluation.homesD.toFixed(2)} hogares totales</div>
                     <div class="nse-effective">${evaluation.effectiveHomesD.toFixed(2)} hogares efectivos</div>
-                    <div class="nse-income">Ingreso: $${currentLocation.income_d.toFixed(2)}</div>
+                    <div class="nse-income">Ingreso: $${globalConfig.income_d.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE C-</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_c_minus}%</div>
                     <div class="nse-homes">${evaluation.homesCMinus.toFixed(2)} hogares totales</div>
                     <div class="nse-effective">${evaluation.effectiveHomesCMinus.toFixed(2)} hogares efectivos</div>
-                    <div class="nse-income">Ingreso: $${currentLocation.income_c_minus.toFixed(2)}</div>
+                    <div class="nse-income">Ingreso: $${globalConfig.income_c_minus.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE C+</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_c_plus}%</div>
                     <div class="nse-homes">${evaluation.homesCPlus.toFixed(2)} hogares totales</div>
                     <div class="nse-effective">${evaluation.effectiveHomesCPlus.toFixed(2)} hogares efectivos</div>
-                    <div class="nse-income">Ingreso: $${currentLocation.income_c_plus.toFixed(2)}</div>
+                    <div class="nse-income">Ingreso: $${globalConfig.income_c_plus.toFixed(2)}</div>
                 </div>
                 <div class="nse-card">
                     <h3>NSE B</h3>
                     <div class="nse-percent">${currentLocation.percent_nse_b}%</div>
                     <div class="nse-homes">${evaluation.homesB.toFixed(2)} hogares totales</div>
                     <div class="nse-effective">${evaluation.effectiveHomesB.toFixed(2)} hogares efectivos</div>
-                    <div class="nse-income">Ingreso: $${currentLocation.income_b.toFixed(2)}</div>
+                    <div class="nse-income">Ingreso: $${globalConfig.income_b.toFixed(2)}</div>
                 </div>
             </div>
         </div>
 
         <div class="section">
-            <h2>Gastos Promedio por NSE (${currentLocation.percent_expenses}% de Gastos)</h2>
+            <h2>Gastos Promedio por NSE (${currentZone.percent_expenses}% de Gastos)</h2>
             <p class="section-description">Fórmula: Hogares Efectivos × Ingreso × % Gastos</p>
             <div class="expenses-grid">
                 <div class="expense-item">
@@ -1095,7 +1108,7 @@ window.deleteCannibalizationHandler = deleteCannibalizationHandler;
 
 // Export evaluation results
 function exportEvaluationResults() {
-    const evaluation = calculateEvaluation(currentLocation);
+    const evaluation = calculateEvaluation(currentLocation, currentZone, competitors, cannibalizations, globalConfig);
 
     // Calculate competitors with metrics
     const competitorsWithMetrics = competitors.map(comp => {
@@ -1146,21 +1159,32 @@ function exportEvaluationResults() {
 
     // Calculate cannibalizations with metrics
     const cannibalizationsWithMetrics = cannibalizations
-        .filter(cann => cann.size && cann.proximity !== undefined && cann.cannibalizationFactor)
+        .filter(cann => cann.proximity !== undefined)
         .map(cann => {
             const proximity = calculateProximity(cann.proximity);
-            const impact = proximity * cann.cannibalizationFactor;
+            
+            // Calcular cannibalizationFactor si no existe
+            let cannibalizationFactor = cann.cannibalizationFactor;
+            if (!cannibalizationFactor) {
+                const cannSize = cann.size || 0;
+                const locSize = currentLocation.size || 1;
+                const sizeFactor = cannSize > 0 ? Math.min(1, Math.pow(cannSize / locSize, 0.5)) : 0;
+                const base = 0.7 * proximity + 0.3 * sizeFactor;
+                cannibalizationFactor = base * proximity * sizeFactor;
+            }
+            
+            const impact = proximity * cannibalizationFactor;
             return {
                 id: cann.id,
                 location_id: cann.location_id,
                 name: cann.name,
-                size: cann.size,
+                size: cann.size || 0,
                 coordinates: {
                     latitude: cann.latitude || null,
                     longitude: cann.longitude || null
                 },
                 proximity: cann.proximity,
-                cannibalizationFactor: cann.cannibalizationFactor,
+                cannibalizationFactor: cannibalizationFactor,
                 proximityValue: proximity,
                 impact: impact
             };
@@ -1176,8 +1200,7 @@ function exportEvaluationResults() {
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
 
-    // Get viability criteria and calculate viability
-    const viabilityCriteria = getViabilityCriteria();
+    // Calculate viability (using viabilityCriteria from renderEvaluation scope)
     const viability = calculateViability(finalAdjustedExpenses, currentLocation.type, viabilityCriteria);
 
     // Build complete evaluation export
@@ -1222,12 +1245,12 @@ function exportEvaluationResults() {
                     percentB: currentLocation.percent_nse_b
                 },
                 income: {
-                    incomeD: currentLocation.income_d,
-                    incomeCMinus: currentLocation.income_c_minus,
-                    incomeCPlus: currentLocation.income_c_plus,
-                    incomeB: currentLocation.income_b
+                    incomeD: globalConfig.income_d,
+                    incomeCMinus: globalConfig.income_c_minus,
+                    incomeCPlus: globalConfig.income_c_plus,
+                    incomeB: globalConfig.income_b
                 },
-                percentExpenses: currentLocation.percent_expenses
+                percentExpenses: currentZone.percent_expenses
             }
         },
         populationAnalysis: {

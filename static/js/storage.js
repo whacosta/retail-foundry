@@ -1,5 +1,8 @@
-// Módulo de almacenamiento en localStorage para Retail Foundry
+// Módulo de almacenamiento en local// Storage module for Retail Foundry
 import { STORAGE_KEYS, DEFAULT_MOBILITY_ZONES, DEFAULT_NSE_INCOME, DEFAULT_VIABILITY_CRITERIA } from './constants.js';
+import { Location } from './entities/Location.js';
+import { Competitor } from './entities/Competitor.js';
+import { Cannibalization } from './entities/Cannibalization.js';
 
 /**
  * Inicializa el almacenamiento con datos por defecto si no existen
@@ -110,24 +113,33 @@ export function updateMobilityZone(id, zoneData) {
 
 export function getLocations() {
     const data = localStorage.getItem(STORAGE_KEYS.LOCATIONS);
-    return data ? JSON.parse(data) : [];
+    const locationsData = data ? JSON.parse(data) : [];
+    return locationsData.map(loc => Location.fromJSON(loc));
 }
 
 export function getLocationById(id) {
     const locations = getLocations();
-    return locations.find(l => l.id === parseInt(id));
+    const location = locations.find(l => l.id === parseInt(id));
+    return location || null;
 }
 
 export function createLocation(locationData) {
     const locations = getLocations();
-    const newLocation = {
+    const location = new Location({
         ...locationData,
         id: getNextId(STORAGE_KEYS.nextLocationId)
-    };
+    });
     
-    locations.push(newLocation);
-    localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(locations));
-    return newLocation;
+    // Validar antes de guardar
+    const validation = location.validate();
+    if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+    }
+    
+    locations.push(location);
+    const locationsJSON = locations.map(l => l.toJSON());
+    localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(locationsJSON));
+    return location;
 }
 
 export function updateLocation(id, locationData) {
@@ -135,9 +147,22 @@ export function updateLocation(id, locationData) {
     const index = locations.findIndex(l => l.id === parseInt(id));
     
     if (index !== -1) {
-        locations[index] = { ...locations[index], ...locationData, id: parseInt(id) };
-        localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(locations));
-        return locations[index];
+        const updatedLocation = new Location({
+            ...locations[index].toJSON(),
+            ...locationData,
+            id: parseInt(id)
+        });
+        
+        // Validar antes de guardar
+        const validation = updatedLocation.validate();
+        if (!validation.isValid) {
+            throw new Error(validation.errors.join(', '));
+        }
+        
+        locations[index] = updatedLocation;
+        const locationsJSON = locations.map(l => l.toJSON());
+        localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(locationsJSON));
+        return updatedLocation;
     }
     return null;
 }
@@ -147,7 +172,8 @@ export function deleteLocation(id) {
     const filtered = locations.filter(l => l.id !== parseInt(id));
     
     if (filtered.length !== locations.length) {
-        localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(filtered));
+        const locationsJSON = filtered.map(l => l.toJSON());
+        localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(locationsJSON));
         
         // También eliminar competidores y canibalizaciones asociadas
         deleteCompetitorsByLocationId(id);
@@ -204,12 +230,14 @@ export function searchLocations(searchTerm, sortBy = 'id', order = 'DESC', page 
 
 export function getCompetitors() {
     const data = localStorage.getItem(STORAGE_KEYS.COMPETITORS);
-    return data ? JSON.parse(data) : [];
+    const competitorsData = data ? JSON.parse(data) : [];
+    return competitorsData.map(comp => Competitor.fromJSON(comp));
 }
 
 export function getCompetitorById(id) {
     const competitors = getCompetitors();
-    return competitors.find(c => c.id === parseInt(id));
+    const competitor = competitors.find(c => c.id === parseInt(id));
+    return competitor || null;
 }
 
 export function getCompetitorsByLocationId(locationId) {
@@ -219,14 +247,21 @@ export function getCompetitorsByLocationId(locationId) {
 
 export function createCompetitor(competitorData) {
     const competitors = getCompetitors();
-    const newCompetitor = {
+    const competitor = new Competitor({
         ...competitorData,
         id: getNextId(STORAGE_KEYS.nextCompetitorId)
-    };
+    });
     
-    competitors.push(newCompetitor);
-    localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitors));
-    return newCompetitor;
+    // Validar antes de guardar
+    const validation = competitor.validate();
+    if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+    }
+    
+    competitors.push(competitor);
+    const competitorsJSON = competitors.map(c => c.toJSON());
+    localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitorsJSON));
+    return competitor;
 }
 
 export function updateCompetitor(id, competitorData) {
@@ -234,9 +269,22 @@ export function updateCompetitor(id, competitorData) {
     const index = competitors.findIndex(c => c.id === parseInt(id));
     
     if (index !== -1) {
-        competitors[index] = { ...competitors[index], ...competitorData, id: parseInt(id) };
-        localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitors));
-        return competitors[index];
+        const updatedCompetitor = new Competitor({
+            ...competitors[index].toJSON(),
+            ...competitorData,
+            id: parseInt(id)
+        });
+        
+        // Validar antes de guardar
+        const validation = updatedCompetitor.validate();
+        if (!validation.isValid) {
+            throw new Error(validation.errors.join(', '));
+        }
+        
+        competitors[index] = updatedCompetitor;
+        const competitorsJSON = competitors.map(c => c.toJSON());
+        localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitorsJSON));
+        return updatedCompetitor;
     }
     return null;
 }
@@ -246,7 +294,8 @@ export function deleteCompetitor(id) {
     const filtered = competitors.filter(c => c.id !== parseInt(id));
     
     if (filtered.length !== competitors.length) {
-        localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(filtered));
+        const competitorsJSON = filtered.map(c => c.toJSON());
+        localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitorsJSON));
         return true;
     }
     return false;
@@ -254,20 +303,29 @@ export function deleteCompetitor(id) {
 
 export function deleteCompetitorsByLocationId(locationId) {
     const competitors = getCompetitors();
-    const filtered = competitors.filter(c => c.location_id !== parseInt(locationId));
-    localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(filtered));
+    const numId = parseInt(locationId);
+    const strId = String(locationId);
+    const filtered = competitors.filter(c => {
+        const compLocId = c.location_id;
+        return !(compLocId === numId || compLocId === strId || 
+                 parseInt(compLocId) === numId || String(compLocId) === strId);
+    });
+    const competitorsJSON = filtered.map(c => c.toJSON());
+    localStorage.setItem(STORAGE_KEYS.COMPETITORS, JSON.stringify(competitorsJSON));
 }
 
 // ==================== CANNIBALIZATIONS ====================
 
 export function getCannibalizations() {
     const data = localStorage.getItem(STORAGE_KEYS.CANNIBALIZATIONS);
-    return data ? JSON.parse(data) : [];
+    const cannibalizationsData = data ? JSON.parse(data) : [];
+    return cannibalizationsData.map(cann => Cannibalization.fromJSON(cann));
 }
 
 export function getCannibalizationById(id) {
     const cannibalizations = getCannibalizations();
-    return cannibalizations.find(c => c.id === parseInt(id));
+    const cannibalization = cannibalizations.find(c => c.id === parseInt(id));
+    return cannibalization || null;
 }
 
 export function getCannibalizationsByLocationId(locationId) {
@@ -277,14 +335,21 @@ export function getCannibalizationsByLocationId(locationId) {
 
 export function createCannibalization(cannibalizationData) {
     const cannibalizations = getCannibalizations();
-    const newCannibalization = {
+    const cannibalization = new Cannibalization({
         ...cannibalizationData,
         id: getNextId(STORAGE_KEYS.nextCannibalizationId)
-    };
+    });
     
-    cannibalizations.push(newCannibalization);
-    localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizations));
-    return newCannibalization;
+    // Validar antes de guardar
+    const validation = cannibalization.validate();
+    if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+    }
+    
+    cannibalizations.push(cannibalization);
+    const cannibalizationsJSON = cannibalizations.map(c => c.toJSON());
+    localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizationsJSON));
+    return cannibalization;
 }
 
 export function updateCannibalization(id, cannibalizationData) {
@@ -292,9 +357,22 @@ export function updateCannibalization(id, cannibalizationData) {
     const index = cannibalizations.findIndex(c => c.id === parseInt(id));
     
     if (index !== -1) {
-        cannibalizations[index] = { ...cannibalizations[index], ...cannibalizationData, id: parseInt(id) };
-        localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizations));
-        return cannibalizations[index];
+        const updatedCannibalization = new Cannibalization({
+            ...cannibalizations[index].toJSON(),
+            ...cannibalizationData,
+            id: parseInt(id)
+        });
+        
+        // Validar antes de guardar
+        const validation = updatedCannibalization.validate();
+        if (!validation.isValid) {
+            throw new Error(validation.errors.join(', '));
+        }
+        
+        cannibalizations[index] = updatedCannibalization;
+        const cannibalizationsJSON = cannibalizations.map(c => c.toJSON());
+        localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizationsJSON));
+        return updatedCannibalization;
     }
     return null;
 }
@@ -304,7 +382,8 @@ export function deleteCannibalization(id) {
     const filtered = cannibalizations.filter(c => c.id !== parseInt(id));
     
     if (filtered.length !== cannibalizations.length) {
-        localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(filtered));
+        const cannibalizationsJSON = filtered.map(c => c.toJSON());
+        localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizationsJSON));
         return true;
     }
     return false;
@@ -312,8 +391,15 @@ export function deleteCannibalization(id) {
 
 export function deleteCannibalizationsByLocationId(locationId) {
     const cannibalizations = getCannibalizations();
-    const filtered = cannibalizations.filter(c => c.location_id !== parseInt(locationId));
-    localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(filtered));
+    const numId = parseInt(locationId);
+    const strId = String(locationId);
+    const filtered = cannibalizations.filter(c => {
+        const cannLocId = c.location_id;
+        return !(cannLocId === numId || cannLocId === strId || 
+                 parseInt(cannLocId) === numId || String(cannLocId) === strId);
+    });
+    const cannibalizationsJSON = filtered.map(c => c.toJSON());
+    localStorage.setItem(STORAGE_KEYS.CANNIBALIZATIONS, JSON.stringify(cannibalizationsJSON));
 }
 
 // ==================== UTILITY ====================
