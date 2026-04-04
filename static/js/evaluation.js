@@ -1108,6 +1108,8 @@ window.deleteCannibalizationHandler = deleteCannibalizationHandler;
 
 // Export evaluation results
 function exportEvaluationResults() {
+    const viabilityCriteria = getViabilityCriteria();
+    const globalConfig = getGlobalConfig();
     const evaluation = calculateEvaluation(currentLocation, currentZone, competitors, cannibalizations, globalConfig);
 
     // Calculate competitors with metrics
