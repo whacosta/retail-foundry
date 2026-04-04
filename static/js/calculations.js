@@ -82,15 +82,15 @@ export function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
 /**
  * Calcula la proximidad basada en la distancia
  * Proximidad inversa: mientras más cerca, mayor proximidad
- * Fórmula: Proximity = 1 / (1 + distance / 300)
+ * Fórmula: Proximity = 1 / (1 + distance / 300) + 0.5
  * @param {number} distance - Distancia en metros
  * @returns {number} Valor de proximidad normalizado entre 0 y 1
  */
 export function calculateProximity(distance) {
     if (distance <= 0) return 1;
-    // Normalización: 1 / (1 + distance/300)
-    // A 0m = 1, a 150m ≈ 0.67, a 300m = 0.5
-    return 1 / (1 + distance / 300);
+    // Normalización: 1 / (1 + distance/300) + 0.5
+    // A 0m = 1.5, a 150m ≈ 0.83, a 300m = 0.75
+    return 1 / (1 + distance / 300) + 0.5;
 }
 
 /**
