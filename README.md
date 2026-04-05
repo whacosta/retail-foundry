@@ -136,13 +136,13 @@ Affinity = Similarity(type) × Similarity(size)
 
 **4. Proximity - Proximidad**
 ```
-Proximity = 1 / (1 + distancia / 300)
+Proximity = 1 / (1 + distancia / umbral)
 ```
 Donde distancia está en metros.
 
 **5. Impact - Impacto**
 ```
-Impact = Affinity × Proximity
+Impact = Affinity × Proximity × 0.6
 ```
 
 **6. Accessibility - Accesibilidad**
@@ -156,12 +156,12 @@ Estas métricas se calculan una sola vez para toda la localidad:
 
 **1. Competition Level - Nivel de Competencia**
 ```
-CompetitionLevel = SUMA de todos los impacts de los competidores
+sumCompetitionImpacts = SUMA de todos los impacts de los competidores
 ```
 
 **2. Competition Norm - Normalización de Competencia**
 ```
-CompetitionNorm = 1 - e^(-CompetitionLevel)
+competitionNorm = sumCompetitionImpacts / (1 + sumCompetitionImpacts)
 ```
 
 **3. Score - Puntuación**
@@ -381,22 +381,19 @@ Hogares Efectivos NSE × Ingresos NSE × (% Gastos / 100)
 Suma de gastos de todos los NSE (usando población efectiva)
 ```
 
-### Ajuste por Competencia
+### Ajuste por Competencia y Share
 ```
-CompetitionAdjustmentAmount = totalExpenses × (1 - CompetitionNorm) × share
+totalAdjustedExpenses = totalExpenses × (share / 100)
 ```
 
 ### Cálculo de Gastos Ajustados (Paso a Paso)
 
 ```
-1. Gastos después de Competencia:
-   expensesAfterCompetition = totalExpenses × (1 - competitionNorm)
+1. Gastos Ajustados por Share:
+   totalAdjustedExpenses = totalExpenses × (share / 100)
 
-2. Gastos Ajustados por Share:
-   totalAdjustedExpenses = expensesAfterCompetition × share
-
-3. Gastos Finales (después de Canibalización):
-   finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationAdjustment)
+2. Gastos Finales (después de Canibalización):
+   finalAdjustedExpenses = totalAdjustedExpenses × (1 - cannibalizationNorm)
 ```
 
 **Nota:** El cálculo ahora aplica los ajustes de forma multiplicativa en lugar de sustractiva, reflejando mejor el impacto porcentual de cada factor.

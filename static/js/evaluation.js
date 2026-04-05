@@ -19,7 +19,7 @@ import {
     calculateEvaluation,
     calculateViability,
     calculateCompetitorMetrics,
-    calculateCompetitionLevel,
+    calculatesumCompetitionImpacts,
     calculateCompetitionNorm,
     calculateScore,
     getCaptureRange,
@@ -431,8 +431,8 @@ function renderEvaluation() {
 
     // Calculate global competition metrics
     const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
-    const competitionLevel = calculateCompetitionLevel(allImpacts);
-    const competitionNorm = calculateCompetitionNorm(competitionLevel);
+    const sumCompetitionImpacts = calculatesumCompetitionImpacts(allImpacts);
+    const competitionNorm = calculateCompetitionNorm(sumCompetitionImpacts);
 
     // Calculate global accessibility (promedio de todos los competidores)
     const avgAccessibility = competitorsWithMetrics.length > 0
@@ -487,8 +487,7 @@ function renderEvaluation() {
     const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
 
     // Calculate final adjusted expenses using corrected formulas
-    const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
-    const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
+    const totalAdjustedExpenses = evaluation.totalExpenses * (share / 100);
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
 
@@ -754,7 +753,7 @@ function renderEvaluation() {
                     </div>
                     <small class="formula-description">
                         <p>Formula: score = 0.6 × accessibility + 0.4 × (1 - competitionNorm)</p>
-                        <p> competitionNorm = 1 - e^(-suma de todos los impactos) => competitionNorm = 1 - e^(-${competitionLevel.toFixed(4)}) = ${competitionNorm.toFixed(4)} </p>
+                        <p> competitionNorm = sumCompetitionImpacts / (1 + sumCompetitionImpacts) => competitionNorm = ${sumCompetitionImpacts.toFixed(4)} / (1 + ${sumCompetitionImpacts.toFixed(4)}) = ${competitionNorm.toFixed(4)} </p>
                         <p>La Competencia Normal indica que se tiene una <strong>Perdida del ${((1 - competitionNorm) * 100).toFixed(2)}% de la cuota de mercado</strong></p>
                         <p>score = 0.6 × ${avgAccessibility.toFixed(4)} + 0.4 × (1 - ${competitionNorm.toFixed(4)}) = ${score.toFixed(4)}</p>
                     </small>
@@ -775,8 +774,8 @@ function renderEvaluation() {
                         <span class="value adjustment-amount" id="adjustmentAmount">$${totalAdjustedExpenses.toFixed(2)}</span>
                     </div>
                     <small class="formula-description">
-                        <p>Formula: totalAdjustedExpenses = totalExpenses × (1 - competitionNorm) × share</p>
-                        <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                        <p>Formula: totalAdjustedExpenses = totalExpenses × share</p>
+                        <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
                     </small>
                 </div>
                 <div class="adjustment-item">
@@ -802,22 +801,12 @@ function renderEvaluation() {
                     </div>
                 <div class="adjustment-item">
                     <div>
-                        <span class="label">Gastos después de Competencia:</span>
-                        <span class="value">$${expensesAfterCompetition.toFixed(2)}</span>
-                    </div>
-                    <small class="formula-description">
-                        <p>Formula: expensesAfterCompetition = totalExpenses × (1 - competitionNorm)</p>
-                        <p>expensesAfterCompetition = $${evaluation.totalExpenses.toFixed(2)} × (1 - ${competitionNorm.toFixed(4)}) = $${expensesAfterCompetition.toFixed(2)}</p>
-                    </small>
-                </div>
-                <div class="adjustment-item">
-                    <div>
                         <span class="label">Gastos Ajustados por Share:</span>
                         <span class="value">$${totalAdjustedExpenses.toFixed(2)}</span>
                     </div>
                     <small class="formula-description">
-                        <p>Formula: totalAdjustedExpenses = expensesAfterCompetition × share</p>
-                        <p>totalAdjustedExpenses = $${expensesAfterCompetition.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
+                        <p>Formula: totalAdjustedExpenses = totalExpenses × share</p>
+                        <p>totalAdjustedExpenses = $${evaluation.totalExpenses.toFixed(2)} × ${(share / 100).toFixed(4)} = $${totalAdjustedExpenses.toFixed(2)}</p>
                     </small>
                 </div>
                 <div class="adjustment-item">
@@ -1138,8 +1127,8 @@ function exportEvaluationResults() {
 
     // Calculate global competition metrics
     const allImpacts = competitorsWithMetrics.map(comp => comp.metrics.impact);
-    const competitionLevel = calculateCompetitionLevel(allImpacts);
-    const competitionNorm = calculateCompetitionNorm(competitionLevel);
+    const sumCompetitionImpacts = calculatesumCompetitionImpacts(allImpacts);
+    const competitionNorm = calculateCompetitionNorm(sumCompetitionImpacts);
 
     // Calculate global accessibility
     const avgAccessibility = competitorsWithMetrics.length > 0
@@ -1197,8 +1186,7 @@ function exportEvaluationResults() {
     const cannibalizationNorm = cannibalizationLevel > 0 ? 1 - Math.exp(-cannibalizationLevel) : 0;
 
     // Calculate final adjusted expenses using corrected formulas
-    const expensesAfterCompetition = evaluation.totalExpenses * (1 - competitionNorm);
-    const totalAdjustedExpenses = expensesAfterCompetition * (share / 100);
+    const totalAdjustedExpenses = evaluation.totalExpenses * (share / 100);
     const cannibalizationAdjustmentAmount = totalAdjustedExpenses * cannibalizationNorm;
     const finalAdjustedExpenses = totalAdjustedExpenses * (1 - cannibalizationNorm);
 
@@ -1288,7 +1276,7 @@ function exportEvaluationResults() {
             totalCompetitors: competitorsWithMetrics.length,
             globalMetrics: {
                 allImpacts: allImpacts,
-                competitionLevel: competitionLevel,
+                sumCompetitionImpacts: sumCompetitionImpacts,
                 competitionNorm: competitionNorm,
                 avgAccessibility: avgAccessibility,
                 score: score,
@@ -1296,18 +1284,18 @@ function exportEvaluationResults() {
                 share: share
             },
             formulas: {
-                competitionLevel: "SUM(impacts)",
-                competitionNorm: "1 - e^(-competitionLevel)",
+                sumCompetitionImpacts: "SUM(impacts)",
+                competitionNorm: "sumCompetitionImpacts / (1 + sumCompetitionImpacts)",
                 score: "0.6 × accessibility + 0.4 × (1 - competitionNorm)",
                 share: "min + (max - min) × score",
-                totalAdjustedExpenses: "totalExpenses × (1 - competitionNorm) × share"
+                totalAdjustedExpenses: "totalExpenses × share"
             },
             calculations: {
-                competitionLevelCalc: `SUM([${allImpacts.join(', ')}]) = ${competitionLevel}`,
-                competitionNormCalc: `1 - e^(-${competitionLevel}) = ${competitionNorm}`,
+                sumCompetitionImpactsCalc: `SUM([${allImpacts.join(', ')}]) = ${sumCompetitionImpacts}`,
+                competitionNormCalc: `${sumCompetitionImpacts} / (1 + ${sumCompetitionImpacts}) = ${competitionNorm}`,
                 scoreCalc: `0.6 × ${avgAccessibility} + 0.4 × (1 - ${competitionNorm}) = ${score}`,
                 shareCalc: `${captureRange.min} + (${captureRange.max} - ${captureRange.min}) × ${score} = ${share}`,
-                totalAdjustedExpensesCalc: `${evaluation.totalExpenses} × (1 - ${competitionNorm}) × ${share / 100} = ${totalAdjustedExpenses}`
+                totalAdjustedExpensesCalc: `${evaluation.totalExpenses} × ${share / 100} = ${totalAdjustedExpenses}`
             },
             adjustment: {
                 amount: totalAdjustedExpenses,
@@ -1329,13 +1317,11 @@ function exportEvaluationResults() {
         },
         finalResults: {
             totalExpenses: evaluation.totalExpenses,
-            expensesAfterCompetition: expensesAfterCompetition,
             totalAdjustedExpenses: totalAdjustedExpenses,
             cannibalizationNorm: cannibalizationNorm,
             finalAdjustedExpenses: finalAdjustedExpenses,
             formulas: {
-                expensesAfterCompetition: "totalExpenses × (1 - competitionNorm)",
-                totalAdjustedExpenses: "expensesAfterCompetition × share",
+                totalAdjustedExpenses: "totalExpenses × share",
                 finalAdjustedExpenses: "totalAdjustedExpenses × (1 - cannibalizationNorm)"
             },
             viability: {

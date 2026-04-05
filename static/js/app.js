@@ -683,7 +683,7 @@ function loadConstantsConfig() {
                 <div style="margin-bottom: 15px;">
                     <strong style="color: #333;">Proximity (Proximidad):</strong>
                     <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
-                        proximity = 1 / (1 + distance / 300)
+                        proximity = 1 / (1 + distance / umbral)
                     </code>
                 </div>
                 <div style="margin-bottom: 15px;">
@@ -701,13 +701,13 @@ function loadConstantsConfig() {
                 <div style="margin-bottom: 15px;">
                     <strong style="color: #333;">Impact (Impacto):</strong>
                     <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
-                        impact = affinity × proximity
+                        impact = affinity × proximity × 0.6
                     </code>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <strong style="color: #333;">Competition Norm (Normalización de Competencia):</strong>
                     <code style="display: block; background: white; padding: 10px; margin-top: 5px; border-radius: 4px;">
-                        competitionNorm = 1 - e^(-Σimpacts)
+                        competitionNorm = sumCompetitionImpacts / (1 + sumCompetitionImpacts)
                     </code>
                 </div>
                 <div style="margin-bottom: 15px;">

@@ -3,9 +3,6 @@ import {
     TYPE_AFFINITY_MATRIX, 
     CAPTURE_RANGES, 
     ACCESSIBILITY_VALUES,
-    COMPETITION_LEVEL_RANGES,
-    DISTANCE_THRESHOLDS,
-    COMPETITOR_TYPES, 
     EFFECTIVE_MARKET_FACTORS
 } from './constants.js';
 
@@ -82,35 +79,45 @@ export function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
 /**
  * Calcula la proximidad basada en la distancia
  * Proximidad inversa: mientras más cerca, mayor proximidad
- * Fórmula: Proximity = 1 / (1 + distance / 300)
+ * Fórmula: Proximity = 1 / (1 + distance / umbral)
+ * Umbrales por zona: Popular=400m, Media=500m, Alta=600m (default)
  * @param {number} distance - Distancia en metros
+ * @param {object} zone - Zona de movilidad (opcional)
  * @returns {number} Valor de proximidad normalizado entre 0 y 1
  */
-export function calculateProximity(distance) {
+export function calculateProximity(distance, zone = null) {
     if (distance <= 0) return 1;
-    // Normalización: 1 / (1 + distance/300)
-    // A 0m = 1, a 150m ≈ 0.67, a 300m = 0.5
-    return 1 / (1 + distance / 300);
+    
+    let umbral = 600; // Umbral por defecto para zona Alta
+    if (zone) {
+        if (zone.id === 1 || zone.id === '1') { // Zona Popular - rural
+            umbral = 400;
+        } else if (zone.id === 2 || zone.id === '2') { // Zona Media - urbano
+            umbral = 500;
+        }
+    }
+    
+    return 1 / (1 + distance / umbral);
 }
 
 /**
  * Calcula el Impacto (Impact)
- * Fórmula: Impact = Affinity * Proximity
+ * Fórmula: Impact = Affinity * Proximity * 0.6
  * @param {number} affinity - Valor de afinidad
  * @param {number} proximity - Valor de proximidad
  * @returns {number} Valor de impacto
  */
 export function calculateImpact(affinity, proximity) {
-    return affinity * proximity;
+    return affinity * proximity * 0.6;
 }
 
 /**
- * Calcula el nivel de competencia (CompetitionLevel)
- * Ahora es la suma de todos los impacts
+ * Calcula la suma de impactos de competencia (sumCompetitionImpacts)
+ * Fórmula: sumCompetitionImpacts = SUMA(impacts)
  * @param {Array} impacts - Array de valores de impact de todos los competidores
  * @returns {number} Suma total de impacts
  */
-export function calculateCompetitionLevel(impacts) {
+export function calculatesumCompetitionImpacts(impacts) {
     return impacts.reduce((sum, impact) => sum + impact, 0);
 }
 
@@ -124,13 +131,13 @@ export function calculateAccessibility(competitorType) {
 }
 
 /**
- * Calcula la normalización de competencia (CompetitionNorm)
- * Fórmula: competitionNorm = 1 - e^(-CompetitionLevel)
- * @param {number} competitionLevel - Nivel de competencia (suma de impacts)
- * @returns {number} Valor normalizado de competencia
+ * Calcula la normalización de competencia (competitionNorm)
+ * Fórmula: competitionNorm = sumCompetitionImpacts / (1 + sumCompetitionImpacts)
+ * @param {number} sumCompetitionImpacts - Suma de los impactos de la competencia
+ * @returns {number} Valor normalizado de competencia entre 0 y 1
  */
-export function calculateCompetitionNorm(competitionLevel) {
-    return 1 - Math.exp(-competitionLevel);
+export function calculateCompetitionNorm(sumCompetitionImpacts) {
+    return sumCompetitionImpacts / (1 + sumCompetitionImpacts);
 }
 
 /**
@@ -174,11 +181,11 @@ export function calculateShare(score, captureRange) {
 }
 
 /**
- * Calcula el Aporte
- * Fórmula: Aporte = Impact * Share
- * @param {number} impact - Valor de impacto
- * @param {number} share - Valor de participación
- * @returns {number} Valor de aporte
+ * Calcula el Aporte (Contribution)
+ * Fórmula: Contribution = Impact × Share
+ * @param {number} impact - Valor de impacto del competidor
+ * @param {number} share - Valor de participación/share en porcentaje
+ * @returns {number} Valor de aporte del competidor
  */
 export function calculateContribution(impact, share) {
     return impact * share;
@@ -196,7 +203,7 @@ export function calculateCompetitorMetrics(competitor, location, zone) {
     const typeSimilarity = calculateTypeSimilarity(location.type, competitor.type);
     const sizeSimilarity = calculateSizeSimilarity(location.size, competitor.size);
     const affinity = calculateAffinity(location.type, location.size, competitor.type, competitor.size);
-    const proximity = calculateProximity(competitor.proximity);
+    const proximity = calculateProximity(competitor.proximity, zone);
     const impact = calculateImpact(affinity, proximity);
     const accessibility = calculateAccessibility(competitor.type);
     
@@ -212,7 +219,10 @@ export function calculateCompetitorMetrics(competitor, location, zone) {
 
 /**
  * Calcula la población efectiva basada en NSE y tipo de localidad
+ * Fórmula población total: homes_5min × (percent_homes_5/100) + homes_10min × (percent_homes_10/100)
+ * Fórmula población efectiva: SUMA(homes_NSE × factor_mercado_NSE) para cada NSE
  * @param {object} location - Objeto localidad
+ * @param {object} zone - Zona de movilidad
  * @returns {object} Objeto con población total y efectiva
  */
 export function calculateEffectivePopulation(location, zone) {
@@ -256,12 +266,14 @@ export function calculateEffectivePopulation(location, zone) {
 
 /**
  * Calcula la evaluación completa de una localidad
+ * Fórmula gastos por NSE: effectiveHomes_NSE × income_NSE × (percent_expenses/100)
+ * Fórmula gastos totales: SUMA(gastos_NSE) para todos los NSE
  * @param {object} location - Objeto localidad
  * @param {object} zone - Zona de movilidad de la localidad
- * @param {object} competitors - Array de competidores (opcional)
- * @param {object} cannibalizations - Array de canibalizaciones (opcional)
+ * @param {Array} competitors - Array de competidores (opcional)
+ * @param {Array} cannibalizations - Array de canibalizaciones (opcional)
  * @param {object} globalConfig - Configuración global con ingresos NSE (opcional)
- * @returns {object} Objeto con la evaluación
+ * @returns {object} Objeto con la evaluación completa
  */
 export function calculateEvaluation(location, zone, competitors = [], cannibalizations = [], globalConfig = null) {
     // Calcular población total y efectiva
@@ -310,11 +322,12 @@ export function calculateEvaluation(location, zone, competitors = [], cannibaliz
 }
 
 /**
- * Calcula la viabilidad
- * @param {number} adjustedExpenses - Gastos ajustados
+ * Calcula la viabilidad de una localidad
+ * Criterios: No Viable (< minViable), Viable (>= minViable y < optimal), Óptimo (>= optimal)
+ * @param {number} adjustedExpenses - Gastos ajustados finales
  * @param {string} locationType - Tipo de localidad
- * @param {object} viabilityCriteria - Criterios de viabilidad configurables
- * @returns {object} Objeto con isViable, status y color
+ * @param {object} viabilityCriteria - Criterios de viabilidad configurables por tipo
+ * @returns {object} Objeto con isViable, status, color, minViable y optimal
  */
 export function calculateViability(adjustedExpenses, locationType = 'Supermercado', viabilityCriteria = null) {
     // Si no se pasan criterios, usar los del tipo de localidad o valores por defecto
