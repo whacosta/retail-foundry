@@ -2,6 +2,7 @@
 import { COMPETITOR_TYPES } from './constants.js';
 import {
     getLocationById,
+    getCompetitors,
     getCompetitorsByLocationId,
     getCannibalizationsByLocationId,
     getCannibalizations,
@@ -107,16 +108,6 @@ function setupEventListeners() {
     document.getElementById('cannibalizationSize').addEventListener('input', updateCannibalizationCalculations);
     document.getElementById('cannibalizationLatitude').addEventListener('input', updateCannibalizationDistance);
     document.getElementById('cannibalizationLongitude').addEventListener('input', updateCannibalizationDistance);
-
-    // Close modals on outside click
-    window.onclick = (event) => {
-        if (event.target === competitorModal) {
-            closeCompetitorModal();
-        }
-        if (event.target === cannibalizationModal) {
-            closeCannibalizationModal();
-        }
-    };
 }
 
 function updateCompetitorDistance() {
@@ -225,10 +216,39 @@ function updateCannibalizationCalculations() {
 function handleCompetitorSubmit(e) {
     e.preventDefault();
 
-    const competitorId = document.getElementById('competitorId').value;
+    const competitorIdStr = document.getElementById('competitorId').value.trim();
+    const competitorName = document.getElementById('competitorName').value.trim();
+
+    if (!competitorIdStr) {
+        alert('El ID del competidor es requerido');
+        return;
+    }
+
+    const competitorId = parseInt(competitorIdStr);
+    if (isNaN(competitorId) || competitorId <= 0) {
+        alert('El ID debe ser un número mayor a 0');
+        return;
+    }
+
+    // Validate ID uniqueness (except in edit mode when ID hasn't changed)
+    const allCompetitors = getCompetitors();
+    const competitorIdField = document.getElementById('competitorId');
+    const isEditMode = competitorIdField.dataset.originalId !== undefined && competitorIdField.dataset.originalId !== '';
+    const originalId = isEditMode ? parseInt(competitorIdField.dataset.originalId) : null;
+
+    if (!isEditMode) {
+        // create mode - check for duplicate
+        const isDuplicate = allCompetitors.some(c => c.id === competitorId);
+        if (isDuplicate) {
+            alert('Ya existe un competidor con este ID. Por favor, use un ID único.');
+            return;
+        }
+    }
+
     const competitorData = {
+        id: competitorId,
         location_id: locationId,
-        name: document.getElementById('competitorName').value,
+        name: competitorName,
         type: document.getElementById('competitorType').value,
         size: parseFloat(document.getElementById('competitorSize').value),
         latitude: parseFloat(document.getElementById('competitorLatitude').value),
@@ -237,8 +257,8 @@ function handleCompetitorSubmit(e) {
     };
 
     try {
-        if (competitorId) {
-            updateCompetitor(parseInt(competitorId), competitorData);
+        if (isEditMode && originalId) {
+            updateCompetitor(originalId, competitorData);
         } else {
             createCompetitor(competitorData);
         }
@@ -256,7 +276,35 @@ function handleCompetitorSubmit(e) {
 function handleCannibalizationSubmit(e) {
     e.preventDefault();
 
-    const cannibalizationId = document.getElementById('cannibalizationId').value;
+    const cannibalizationIdStr = document.getElementById('cannibalizationId').value.trim();
+    const cannibalizationName = document.getElementById('cannibalizationName').value.trim();
+
+    if (!cannibalizationIdStr) {
+        alert('El ID de canibalización es requerido');
+        return;
+    }
+
+    const cannibalizationId = parseInt(cannibalizationIdStr);
+    if (isNaN(cannibalizationId) || cannibalizationId <= 0) {
+        alert('El ID debe ser un número mayor a 0');
+        return;
+    }
+
+    // Validate ID uniqueness (except in edit mode when ID hasn't changed)
+    const allCannibalizations = getCannibalizations();
+    const cannibalizationIdField = document.getElementById('cannibalizationId');
+    const isEditMode = cannibalizationIdField.dataset.originalId !== undefined && cannibalizationIdField.dataset.originalId !== '';
+    const originalId = isEditMode ? parseInt(cannibalizationIdField.dataset.originalId) : null;
+
+    if (!isEditMode) {
+        // create mode - check for duplicate
+        const isDuplicate = allCannibalizations.some(c => c.id === cannibalizationId);
+        if (isDuplicate) {
+            alert('Ya existe una canibalización con este ID. Por favor, use un ID único.');
+            return;
+        }
+    }
+
     const cannSize = parseFloat(document.getElementById('cannibalizationSize').value);
     const distance = parseFloat(document.getElementById('cannibalizationProximity').value);
 
@@ -267,8 +315,9 @@ function handleCannibalizationSubmit(e) {
     const cannibalizationFactor = base * proximity * sizeFactor;
 
     const cannibalizationData = {
+        id: cannibalizationId,
         location_id: locationId,
-        name: document.getElementById('cannibalizationName').value,
+        name: cannibalizationName,
         size: cannSize,
         latitude: parseFloat(document.getElementById('cannibalizationLatitude').value),
         longitude: parseFloat(document.getElementById('cannibalizationLongitude').value),
@@ -277,10 +326,10 @@ function handleCannibalizationSubmit(e) {
     };
 
     try {
-        if (cannibalizationId) {
-            const updated = updateCannibalization(parseInt(cannibalizationId), cannibalizationData);
+        if (isEditMode && originalId) {
+            updateCannibalization(originalId, cannibalizationData);
         } else {
-            const created = createCannibalization(cannibalizationData);
+            createCannibalization(cannibalizationData);
         }
 
         closeCannibalizationModal();
@@ -294,9 +343,13 @@ function handleCannibalizationSubmit(e) {
 }
 
 function openCompetitorModal(competitor = null) {
+    const competitorIdField = document.getElementById('competitorId');
+    
     if (competitor) {
         document.getElementById('competitorModalTitle').textContent = 'Editar Competidor';
-        document.getElementById('competitorId').value = competitor.id;
+        competitorIdField.value = competitor.id;
+        competitorIdField.readOnly = true;
+        competitorIdField.dataset.originalId = competitor.id;
         document.getElementById('competitorName').value = competitor.name;
         document.getElementById('competitorType').value = competitor.type;
         document.getElementById('competitorSize').value = competitor.size;
@@ -320,7 +373,14 @@ function openCompetitorModal(competitor = null) {
     } else {
         document.getElementById('competitorModalTitle').textContent = 'Agregar Competidor';
         competitorForm.reset();
-        document.getElementById('competitorId').value = '';
+        competitorIdField.readOnly = false;
+        competitorIdField.dataset.originalId = '';
+        
+        // Auto-generate next competitor ID
+        const allCompetitors = getCompetitors();
+        const maxId = allCompetitors.length > 0 ? Math.max(...allCompetitors.map(c => c.id || 0)) : 0;
+        competitorIdField.value = maxId + 1;
+        
         document.getElementById('locationId').value = locationId;
         document.getElementById('calculationResults').style.display = 'none';
     }
@@ -334,9 +394,13 @@ function closeCompetitorModal() {
 }
 
 function openCannibalizationModal(cannibalization = null) {
+    const cannibalizationIdField = document.getElementById('cannibalizationId');
+    
     if (cannibalization) {
         document.getElementById('cannibalizationModalTitle').textContent = 'Editar Canibalización';
-        document.getElementById('cannibalizationId').value = cannibalization.id;
+        cannibalizationIdField.value = cannibalization.id;
+        cannibalizationIdField.readOnly = true;
+        cannibalizationIdField.dataset.originalId = cannibalization.id;
         document.getElementById('cannibalizationName').value = cannibalization.name;
         document.getElementById('cannibalizationSize').value = cannibalization.size;
         document.getElementById('cannibalizationLatitude').value = cannibalization.latitude || '';
@@ -359,7 +423,14 @@ function openCannibalizationModal(cannibalization = null) {
     } else {
         document.getElementById('cannibalizationModalTitle').textContent = 'Agregar Canibalización';
         cannibalizationForm.reset();
-        document.getElementById('cannibalizationId').value = '';
+        cannibalizationIdField.readOnly = false;
+        cannibalizationIdField.dataset.originalId = '';
+        
+        // Auto-generate next cannibalization ID
+        const allCannibalizations = getCannibalizations();
+        const maxId = allCannibalizations.length > 0 ? Math.max(...allCannibalizations.map(c => c.id || 0)) : 0;
+        cannibalizationIdField.value = maxId + 1;
+        
         document.getElementById('cannLocationId').value = locationId;
         document.getElementById('cannibalizationCalculationResults').style.display = 'none';
     }

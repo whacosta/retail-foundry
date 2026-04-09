@@ -125,9 +125,15 @@ export function getLocationById(id) {
 
 export function createLocation(locationData) {
     const locations = getLocations();
+    
+    // Si el usuario proporciona un ID, usarlo; si no, generar uno automáticamente
+    const locationId = locationData.id && locationData.id > 0 
+        ? locationData.id 
+        : getNextId(STORAGE_KEYS.nextLocationId);
+    
     const location = new Location({
         ...locationData,
-        id: getNextId(STORAGE_KEYS.nextLocationId)
+        id: locationId
     });
     
     // Validar antes de guardar
@@ -247,9 +253,15 @@ export function getCompetitorsByLocationId(locationId) {
 
 export function createCompetitor(competitorData) {
     const competitors = getCompetitors();
+    
+    // Si el usuario proporciona un ID, usarlo; si no, generar uno automáticamente
+    const competitorId = competitorData.id && competitorData.id > 0 
+        ? competitorData.id 
+        : getNextId(STORAGE_KEYS.nextCompetitorId);
+    
     const competitor = new Competitor({
         ...competitorData,
-        id: getNextId(STORAGE_KEYS.nextCompetitorId)
+        id: competitorId
     });
     
     // Validar antes de guardar
@@ -335,9 +347,15 @@ export function getCannibalizationsByLocationId(locationId) {
 
 export function createCannibalization(cannibalizationData) {
     const cannibalizations = getCannibalizations();
+    
+    // Si el usuario proporciona un ID, usarlo; si no, generar uno automáticamente
+    const cannibalizationId = cannibalizationData.id && cannibalizationData.id > 0 
+        ? cannibalizationData.id 
+        : getNextId(STORAGE_KEYS.nextCannibalizationId);
+    
     const cannibalization = new Cannibalization({
         ...cannibalizationData,
-        id: getNextId(STORAGE_KEYS.nextCannibalizationId)
+        id: cannibalizationId
     });
     
     // Validar antes de guardar

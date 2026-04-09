@@ -28,13 +28,17 @@
             <span class="close-competitor">&times;</span>
             <h2 id="competitorModalTitle">Agregar Competidor</h2>
             <form id="competitorForm">
-                <input type="hidden" id="competitorId">
-                <input type="hidden" id="locationId">
-                
-                <div class="form-group">
-                    <label for="competitorName">Nombre del Competidor *</label>
-                    <input type="text" id="competitorName" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="competitorId">ID del Competidor *</label>
+                        <input type="number" id="competitorId" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="competitorName">Nombre del Competidor *</label>
+                        <input type="text" id="competitorName" required>
+                    </div>
                 </div>
+                <input type="hidden" id="locationId">
 
                 <div class="form-row">
                     <div class="form-group">
@@ -114,13 +118,17 @@
             <span class="close-cannibalization">&times;</span>
             <h2 id="cannibalizationModalTitle">Agregar Canibalización</h2>
             <form id="cannibalizationForm">
-                <input type="hidden" id="cannibalizationId">
-                <input type="hidden" id="cannLocationId">
-                
-                <div class="form-group">
-                    <label for="cannibalizationName">Nombre del Local *</label>
-                    <input type="text" id="cannibalizationName" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cannibalizationId">ID de Canibalización *</label>
+                        <input type="number" id="cannibalizationId" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cannibalizationName">Nombre del Local *</label>
+                        <input type="text" id="cannibalizationName" required>
+                    </div>
                 </div>
+                <input type="hidden" id="cannLocationId">
 
                 <div class="form-group input-with-symbol" data-symbol="m²">
                     <label for="cannibalizationSize">Tamaño (m²) *</label>

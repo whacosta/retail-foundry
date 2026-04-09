@@ -20,7 +20,6 @@ let currentOrder = 'DESC';
 const limit = 10;
 let mobilityZones = [];
 
-const modal = document.getElementById('modal');
 const configModal = document.getElementById('configModal');
 const newLocationBtn = document.getElementById('newLocationBtn');
 const configBtn = document.getElementById('configBtn');
@@ -28,13 +27,10 @@ const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 const importFileInput = document.getElementById('importFileInput');
-const closeBtn = document.getElementsByClassName('close')[0];
 const closeConfigBtn = document.getElementsByClassName('close-config')[0];
-const cancelBtn = document.getElementById('cancelBtn');
 const cancelConfigBtn = document.getElementById('cancelConfigBtn');
 const cancelGlobalConfigBtn = document.getElementById('cancelGlobalConfigBtn');
 const cancelViabilityConfigBtn = document.getElementById('cancelViabilityConfigBtn');
-const locationForm = document.getElementById('locationForm');
 const configForm = document.getElementById('configForm');
 const globalConfigForm = document.getElementById('globalConfigForm');
 const viabilityConfigForm = document.getElementById('viabilityConfigForm');
@@ -43,11 +39,10 @@ const sortSelect = document.getElementById('sortSelect');
 const orderSelect = document.getElementById('orderSelect');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
-const mobilityZoneSelect = document.getElementById('mobilityZone');
 const locationTypeSelect = document.getElementById('locationType');
 
 newLocationBtn.onclick = () => {
-    openModal();
+    window.location.href = 'location.html';
 };
 
 configBtn.onclick = () => {
@@ -76,16 +71,8 @@ importFileInput.onchange = (event) => {
     handleImportData(event);
 };
 
-closeBtn.onclick = () => {
-    closeModal();
-};
-
 closeConfigBtn.onclick = () => {
     closeConfigModal();
-};
-
-cancelBtn.onclick = () => {
-    closeModal();
 };
 
 cancelConfigBtn.onclick = () => {
@@ -101,17 +88,10 @@ cancelViabilityConfigBtn.onclick = () => {
 };
 
 window.onclick = (event) => {
-    if (event.target == modal) {
-        closeModal();
-    }
     if (event.target == configModal) {
         closeConfigModal();
     }
 };
-
-mobilityZoneSelect.addEventListener('change', (e) => {
-    updatePercentagesFromZone(e.target.value);
-});
 
 searchInput.addEventListener('input', (e) => {
     currentSearch = e.target.value;
@@ -149,122 +129,6 @@ nextBtn.addEventListener('click', () => {
     loadLocations();
 });
 
-locationForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const percentNSED = parseFloat(document.getElementById('percentNSED').value);
-    const percentNSECMinus = parseFloat(document.getElementById('percentNSECMinus').value);
-    const percentNSECPlus = parseFloat(document.getElementById('percentNSECPlus').value);
-    const percentNSEB = parseFloat(document.getElementById('percentNSEB').value);
-    
-    const totalNSE = percentNSED + percentNSECMinus + percentNSECPlus + percentNSEB;
-    
-    if (Math.abs(totalNSE - 100) > 0.01) {
-        alert(`La suma de los porcentajes NSE debe ser 100%. Actualmente es ${totalNSE.toFixed(2)}%`);
-        return;
-    }
-    
-    const latitude = parseFloat(document.getElementById('latitude').value);
-    const longitude = parseFloat(document.getElementById('longitude').value);
-    
-    // Validar coordenadas
-    if (latitude < -90 || latitude > 90) {
-        alert('❌ La latitud debe estar entre -90 y 90 grados');
-        return;
-    }
-    
-    if (longitude < -180 || longitude > 180) {
-        alert('❌ La longitud debe estar entre -180 y 180 grados');
-        return;
-    }
-    
-    const locationId = document.getElementById('locationId').value;
-    const locationData = {
-        name: document.getElementById('name').value,
-        type: document.getElementById('locationType').value,
-        size: parseFloat(document.getElementById('locationSize').value),
-        latitude: latitude,
-        longitude: longitude,
-        provincia: document.getElementById('provincia').value,
-        canton: document.getElementById('canton').value,
-        parroquia: document.getElementById('parroquia').value,
-        direccion: document.getElementById('direccion').value,
-        homes_5min: parseInt(document.getElementById('homes5Min').value),
-        percent_homes_5: parseFloat(document.getElementById('percentHomes5').value),
-        homes_10min: parseInt(document.getElementById('homes10Min').value),
-        percent_homes_10: parseFloat(document.getElementById('percentHomes10').value),
-        mobility_zone_id: parseInt(document.getElementById('mobilityZone').value),
-        percent_nse_d: percentNSED,
-        percent_nse_c_minus: percentNSECMinus,
-        percent_nse_c_plus: percentNSECPlus,
-        percent_nse_b: percentNSEB,
-        income_d: parseFloat(document.getElementById('incomeD').value),
-        income_c_minus: parseFloat(document.getElementById('incomeCMinus').value),
-        income_c_plus: parseFloat(document.getElementById('incomeCPlus').value),
-        income_b: parseFloat(document.getElementById('incomeB').value),
-        percent_expenses: parseFloat(document.getElementById('percentExpenses').value)
-    };
-
-    try {
-        if (locationId) {
-            updateLocation(parseInt(locationId), locationData);
-        } else {
-            createLocation(locationData);
-        }
-        
-        closeModal();
-        loadLocations();
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al guardar la localidad');
-    }
-});
-
-function openModal(location = null) {
-    // Cargar ingresos desde configuración global
-    const globalConfig = getGlobalConfig();
-    
-    if (location) {
-        document.getElementById('modalTitle').textContent = 'Editar Localidad';
-        document.getElementById('locationId').value = location.id;
-        document.getElementById('name').value = location.name;
-        document.getElementById('locationType').value = location.type || '';
-        document.getElementById('locationSize').value = location.size || '';
-        document.getElementById('latitude').value = location.latitude;
-        document.getElementById('longitude').value = location.longitude;
-        document.getElementById('provincia').value = location.provincia || '';
-        document.getElementById('canton').value = location.canton || '';
-        document.getElementById('parroquia').value = location.parroquia || '';
-        document.getElementById('direccion').value = location.direccion || '';
-        document.getElementById('mobilityZone').value = location.mobility_zone_id || 1;
-        document.getElementById('homes5Min').value = location.homes_5min;
-        document.getElementById('homes10Min').value = location.homes_10min;
-        document.getElementById('percentNSED').value = location.percent_nse_d;
-        document.getElementById('percentNSECMinus').value = location.percent_nse_c_minus;
-        document.getElementById('percentNSECPlus').value = location.percent_nse_c_plus;
-        document.getElementById('percentNSEB').value = location.percent_nse_b;
-        updatePercentagesFromZone(location.mobility_zone_id || 1);
-    } else {
-        document.getElementById('modalTitle').textContent = 'Nueva Localidad';
-        locationForm.reset();
-        document.getElementById('locationId').value = '';
-        document.getElementById('mobilityZone').value = '1';
-        updatePercentagesFromZone('1');
-    }
-    
-    // Cargar ingresos globales (readonly)
-    document.getElementById('incomeD').value = globalConfig.income_d;
-    document.getElementById('incomeCMinus').value = globalConfig.income_c_minus;
-    document.getElementById('incomeCPlus').value = globalConfig.income_c_plus;
-    document.getElementById('incomeB').value = globalConfig.income_b;
-    
-    modal.style.display = 'block';
-}
-
-function closeModal() {
-    modal.style.display = 'none';
-    locationForm.reset();
-}
 
 function loadLocations() {
     try {
@@ -293,7 +157,7 @@ function loadLocations() {
                     <td>
                         <div class="action-buttons">
                             <button class="btn btn-info" onclick="window.viewEvaluation(${location.id})">Ver Evaluación</button>
-                            <button class="btn btn-success" onclick="window.editLocation(${location.id})">Editar</button>
+                            <a href="location.html?id=${location.id}" class="btn btn-success">Editar</a>
                             <button class="btn btn-danger" onclick="window.deleteLocationHandler(${location.id})">Eliminar</button>
                         </div>
                     </td>
@@ -318,20 +182,6 @@ function viewEvaluation(id) {
     window.location.href = `evaluation.html?id=${id}`;
 }
 
-function editLocationHandler(id) {
-    try {
-        const location = getLocationById(id);
-        if (location) {
-            openModal(location);
-        } else {
-            alert('Localidad no encontrada');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar la localidad');
-    }
-}
-
 function deleteLocationHandler(id) {
     if (confirm('¿Está seguro de que desea eliminar esta localidad?')) {
         try {
@@ -349,6 +199,8 @@ function loadMobilityZones() {
         mobilityZones = getMobilityZones();
         
         const select = document.getElementById('mobilityZone');
+        if (!select) return; // El select no existe en esta página (e.g., index.html)
+        
         select.innerHTML = '<option value="">Seleccione una zona...</option>';
         mobilityZones.forEach(zone => {
             const option = document.createElement('option');
@@ -363,6 +215,8 @@ function loadMobilityZones() {
 
 function loadLocationTypes() {
     const select = document.getElementById('locationType');
+    if (!select) return; // El select no existe en esta página (e.g., index.html)
+    
     select.innerHTML = '<option value="">Seleccione un tipo...</option>';
     COMPETITOR_TYPES.forEach(type => {
         const option = document.createElement('option');
@@ -891,7 +745,6 @@ async function handleImportData(event) {
 
 // Exponer funciones globalmente para onclick handlers
 window.viewEvaluation = viewEvaluation;
-window.editLocation = editLocationHandler;
 window.deleteLocationHandler = deleteLocationHandler;
 window.switchMainTab = switchMainTab;
 
