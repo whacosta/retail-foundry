@@ -209,10 +209,12 @@ export default class LocationPageManager {
             if (location.walking_isochrone && location.walking_isochrone.geometry) {
                 this.isochroneManager.drawIsochrone(location.walking_isochrone.geometry, 'walking');
                 console.log('[locationPage] Isocronas walking restauradas desde almacenamiento');
+                this.calculateAndDisplayPopulationStats(location.walking_isochrone.geometry, 'walking');
             }
             if (location.driving_isochrone && location.driving_isochrone.geometry) {
                 this.isochroneManager.drawIsochrone(location.driving_isochrone.geometry, 'driving');
                 console.log('[locationPage] Isocronas driving restauradas desde almacenamiento');
+                this.calculateAndDisplayPopulationStats(location.driving_isochrone.geometry, 'driving');
             }
             
         } catch (error) {
@@ -645,6 +647,35 @@ export default class LocationPageManager {
     }
 
     /**
+     * Calcula y muestra estadísticas de población para una isócrona
+     */
+    async calculateAndDisplayPopulationStats(isoGeometry, type, homesElementId) {
+        try {
+            if (!this.populationAnalyzer.populationData) {
+                await this.populationAnalyzer.loadPopulationData();
+            }
+            const stats = this.populationAnalyzer.calculatePopulationInIsochrone(isoGeometry);
+            const area = this.populationAnalyzer.calculateIsochroneArea(isoGeometry);
+            const density = this.populationAnalyzer.calculateDensity(stats.totalPopulation, area);
+            console.log(`[${type}] Población: ${stats.totalPopulation} hab | Área: ${area.toFixed(2)} km² | Densidad: ${density.toFixed(0)} hab/km²`);
+            
+            // Actualizar estadísticas en la página
+            const homes = parseInt(document.getElementById(homesElementId).value) || 0;
+            this.updatePopulationDisplay(type.toLowerCase(), homes, area, density);
+        } catch (e) {
+            // Manejo de errores - principalmente cuando INEC no está configurado
+            if (e.message.includes('no configurado')) {
+                console.warn('[locationPage] Datos INEC no configurados');
+            } else if (e.message.includes('no cargado')) {
+                console.warn('[locationPage] Datos INEC no disponibles - configurar en Settings');
+            } else {
+                console.warn('[locationPage] Error cargar datos INEC:', e.message);
+            }
+            // Continuar sin estadísticas - no es crítico
+        }
+    }
+
+    /**
      * Calcular y mostrar isocrona de 5 minutos a pie
      */
     async calculateIsochroneWalking() {
@@ -671,26 +702,8 @@ export default class LocationPageManager {
                 };
                 this.saveCurrentLocationWithIsochrone('walking', isochroneData);
                 
-                // Calcular estadísticas si tenemos datos INEC
-                try {
-                    if (!this.populationAnalyzer.populationData) {
-                        await this.populationAnalyzer.loadPopulationData();
-                    }
-                    const stats = this.populationAnalyzer.calculatePopulationInIsochrone(isoGeometry);
-                    const area = this.populationAnalyzer.calculateIsochroneArea(isoGeometry);
-                    const density = this.populationAnalyzer.calculateDensity(stats.totalPopulation, area);
-                    console.log(`[Walking] Población: ${stats.totalPopulation} hab | Área: ${area.toFixed(2)} km² | Densidad: ${density.toFixed(0)} hab/km²`);
-                    
-                    // Actualizar estadísticas en la página usando homes5Min
-                    const homes5Min = parseInt(document.getElementById('homes5Min').value) || 0;
-                    this.updatePopulationDisplay('walking', homes5Min, area, density);
-                } catch (e) {
-                    if (e.message.includes('no configurado')) {
-                        alert('⚠️ Datos INEC no configurados\n\nPara ver estadísticas de población:\n1. Abre Configuración\n2. Ve a "Configuraciones del Sistema"\n3. Ingresa la ruta de datos INEC y guarda\n\nLa isócrona se ha dibujado correctamente.');
-                    } else {
-                        console.warn('[locationPage] No se pudo cargar datos INEC:', e.message);
-                    }
-                }
+                // Calcular y mostrar estadísticas de población
+                this.calculateAndDisplayPopulationStats(isoGeometry, 'Walking', 'homes5Min');
             }
         } catch (error) {
             alert('❌ Error calculando isócrona: ' + error.message);
@@ -725,26 +738,8 @@ export default class LocationPageManager {
                 };
                 this.saveCurrentLocationWithIsochrone('driving', isochroneData);
                 
-                // Calcular estadísticas si tenemos datos INEC
-                try {
-                    if (!this.populationAnalyzer.populationData) {
-                        await this.populationAnalyzer.loadPopulationData();
-                    }
-                    const stats = this.populationAnalyzer.calculatePopulationInIsochrone(isoGeometry);
-                    const area = this.populationAnalyzer.calculateIsochroneArea(isoGeometry);
-                    const density = this.populationAnalyzer.calculateDensity(stats.totalPopulation, area);
-                    console.log(`[Driving] Población: ${stats.totalPopulation} hab | Área: ${area.toFixed(2)} km² | Densidad: ${density.toFixed(0)} hab/km²`);
-                    
-                    // Actualizar estadísticas en la página usando homes10Min
-                    const homes10Min = parseInt(document.getElementById('homes10Min').value) || 0;
-                    this.updatePopulationDisplay('driving', homes10Min, area, density);
-                } catch (e) {
-                    if (e.message.includes('no configurado')) {
-                        alert('⚠️ Datos INEC no configurados\n\nPara ver estadísticas de población:\n1. Abre Configuración\n2. Ve a "Configuraciones del Sistema"\n3. Ingresa la ruta de datos INEC y guarda\n\nLa isócrona se ha dibujado correctamente.');
-                    } else {
-                        console.warn('[locationPage] No se pudo cargar datos INEC:', e.message);
-                    }
-                }
+                // Calcular y mostrar estadísticas de población
+                this.calculateAndDisplayPopulationStats(isoGeometry, 'Driving', 'homes10Min');
             }
         } catch (error) {
             alert('❌ Error calculando isócrona: ' + error.message);
