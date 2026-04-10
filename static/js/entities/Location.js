@@ -22,6 +22,8 @@ export class Location {
         this.percent_nse_c_minus = data.percent_nse_c_minus || 0;
         this.percent_nse_c_plus = data.percent_nse_c_plus || 0;
         this.percent_nse_b = data.percent_nse_b || 0;
+        this.walking_isochrone = data.walking_isochrone || null;
+        this.driving_isochrone = data.driving_isochrone || null;
     }
 
     /**
@@ -50,6 +52,14 @@ export class Location {
     }
 
     /**
+     * Limpia los datos de isocronas guardados
+     */
+    clearIsochroneData() {
+        this.walking_isochrone = null;
+        this.driving_isochrone = null;
+    }
+
+    /**
      * Convierte la localidad a un objeto plano para almacenamiento
      */
     toJSON() {
@@ -70,7 +80,9 @@ export class Location {
             percent_nse_d: this.percent_nse_d,
             percent_nse_c_minus: this.percent_nse_c_minus,
             percent_nse_c_plus: this.percent_nse_c_plus,
-            percent_nse_b: this.percent_nse_b
+            percent_nse_b: this.percent_nse_b,
+            walking_isochrone: this.walking_isochrone,
+            driving_isochrone: this.driving_isochrone
         };
     }
 

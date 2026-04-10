@@ -41,6 +41,11 @@ export default class LocationPageManager {
         // Managers para isocronas y análisis de población
         this.isochroneManager = null;
         this.populationAnalyzer = null;
+        
+        // Almacenamiento temporal de isocronas en modo crear (antes de guardar la localidad)
+        this.pendingWalkingIsochrone = null;
+        this.pendingDrivingIsochrone = null;
+        this.populationAnalyzer = null;
     }
 
     /**
@@ -72,7 +77,16 @@ export default class LocationPageManager {
             // Cargar ingresos globales
             this.loadGlobalConfig();
             
-            // Si es editar, cargar localidad
+            // Mostrar formulario
+            this.form.style.display = 'block';
+            
+            // Agregar event listeners
+            this.attachEventListeners();
+            
+            // Inicializar mapa interactivo ANTES de cargar localidad (IsochroneManager se crea aquí)
+            this.initializeMap();
+            
+            // Si es editar, cargar localidad DESPUÉS de inicializar el mapa
             if (this.currentMode === 'edit') {
                 this.loading.style.display = 'block';
                 await this.loadLocation(this.currentLocationId);
@@ -82,15 +96,6 @@ export default class LocationPageManager {
                 this.locationIdInput.value = this.nextSuggestedId;
                 this.locationIdInput.readOnly = false; // Permitir editar el ID
             }
-            
-            // Mostrar formulario
-            this.form.style.display = 'block';
-            
-            // Agregar event listeners
-            this.attachEventListeners();
-            
-            // Inicializar mapa interactivo
-            this.initializeMap();
         } catch (error) {
             console.error('Error al initializar página:', error);
             alert('Error al cargar la página');
@@ -162,6 +167,12 @@ export default class LocationPageManager {
                 return;
             }
             
+            // Guardar las coordenadas originales para detectar cambios
+            this.originalCoordinates = {
+                latitude: location.latitude,
+                longitude: location.longitude
+            };
+            
             // Guardar el ID original (para detectar si cambió)
             this.originalLocationId = location.id;
             
@@ -187,6 +198,22 @@ export default class LocationPageManager {
             
             // Actualizar porcentajes según la zona de movilidad
             this.updatePercentagesFromZone(location.mobility_zone_id || 1);
+            
+            // Actualizar indicadores de isocronas (timestamps)
+            this.updateIsochroneStatusDisplay();
+            
+            // Actualizar mapa a las coordenadas de la localidad cargada
+            this.updateMapFromInputs();
+                        
+            // Redibujar isocronas guardadas si existen (ahora isochroneManager ya existe)
+            if (location.walking_isochrone && location.walking_isochrone.geometry) {
+                this.isochroneManager.drawIsochrone(location.walking_isochrone.geometry, 'walking');
+                console.log('[locationPage] Isocronas walking restauradas desde almacenamiento');
+            }
+            if (location.driving_isochrone && location.driving_isochrone.geometry) {
+                this.isochroneManager.drawIsochrone(location.driving_isochrone.geometry, 'driving');
+                console.log('[locationPage] Isocronas driving restauradas desde almacenamiento');
+            }
             
         } catch (error) {
             console.error('Error al cargar localidad:', error);
@@ -307,13 +334,47 @@ export default class LocationPageManager {
         try {
             const locationData = this.getFormData();
             
+            // Si las coordenadas cambiaron, limpiar datos de isocronas
+            if (this.currentMode === 'edit' && this.originalCoordinates) {
+                const coordsChanged = 
+                    locationData.latitude !== this.originalCoordinates.latitude ||
+                    locationData.longitude !== this.originalCoordinates.longitude;
+                
+                if (coordsChanged) {
+                    locationData.walking_isochrone = null;
+                    locationData.driving_isochrone = null;
+                    console.log('[locationPage] Coordenadas cambiadas, isocronas limpiadas');
+                } else {
+                    // Si las coordenadas NO cambiaron, preservar las isocronas existentes
+                    const currentLocation = getLocationById(this.originalLocationId);
+                    if (currentLocation) {
+                        if (currentLocation.walking_isochrone) {
+                            locationData.walking_isochrone = currentLocation.walking_isochrone;
+                        }
+                        if (currentLocation.driving_isochrone) {
+                            locationData.driving_isochrone = currentLocation.driving_isochrone;
+                        }
+                    }
+                }
+            }
+                        
             if (this.currentMode === 'edit') {
                 // En modo editar, usar el ID original para la actualización
-                // El ID está readonly, pero incluimos el ID original para consistencia
                 updateLocation(this.originalLocationId, locationData);
+                console.log('[locationPage] Localidad actualizada correctamente');
             } else {
-                // En modo crear, usar el ID que proporciona el usuario
+                // En modo crear, incluir isocronas pendientes si existen
+                if (this.pendingWalkingIsochrone) {
+                    locationData.walking_isochrone = this.pendingWalkingIsochrone;
+                }
+                if (this.pendingDrivingIsochrone) {
+                    locationData.driving_isochrone = this.pendingDrivingIsochrone;
+                }
                 createLocation(locationData);
+                // Limpiar isocronas pendientes tras guardar
+                this.pendingWalkingIsochrone = null;
+                this.pendingDrivingIsochrone = null;
+                console.log('[locationPage] Localidad creada correctamente');
             }
             
             // Volver a index.html
@@ -503,6 +564,87 @@ export default class LocationPageManager {
     }
 
     /**
+     * Guarda la localidad actual con los datos de isocronas
+     * @param {string} isochroneType - 'walking' o 'driving'
+     * @param {object} isochroneData - { geometry, area, reachfactor, timestamp }
+     */
+    async saveCurrentLocationWithIsochrone(isochroneType, isochroneData) {
+        try {
+            // Guardar o actualizar en storage
+            if (this.currentMode === 'edit') {
+                // En modo editar, guardar directamente
+                const locationData = this.getFormData();
+                
+                // Asignar datos de isocronas
+                if (isochroneType === 'walking') {
+                    locationData.walking_isochrone = isochroneData;
+                } else if (isochroneType === 'driving') {
+                    locationData.driving_isochrone = isochroneData;
+                }
+                
+                updateLocation(this.originalLocationId, locationData);
+                console.log(`[locationPage] Location ${this.originalLocationId} actualizada con isocronas ${isochroneType}`);
+                // Actualizar indicadores visuales
+                this.updateIsochroneStatusDisplay();
+            } else {
+                // En modo crear, almacenar temporalmente hasta que el usuario guarde la localidad
+                if (isochroneType === 'walking') {
+                    this.pendingWalkingIsochrone = isochroneData;
+                    console.log('[locationPage] Isocronas walking almacenadas temporalmente (se guardarán al crear la localidad)');
+                } else if (isochroneType === 'driving') {
+                    this.pendingDrivingIsochrone = isochroneData;
+                    console.log('[locationPage] Isocronas driving almacenadas temporalmente (se guardarán al crear la localidad)');
+                }
+            }
+        } catch (error) {
+            console.error(`[locationPage] Error guardando isocronas ${isochroneType}:`, error);
+        }
+    }
+
+    /**
+     * Actualiza los indicadores visuales del estado de isocronas
+     */
+    updateIsochroneStatusDisplay() {
+        try {
+            // Obtener datos actuales de la localidad si estamos en modo edit
+            if (this.currentMode === 'edit' && this.originalLocationId) {
+                const location = getLocationById(this.originalLocationId);
+                if (location) {
+                    // Actualizar estado de walking isochrone
+                    const walkingStatus = document.getElementById('walkingIsochroneStatus');
+                    if (walkingStatus) {
+                        if (location.walking_isochrone && location.walking_isochrone.timestamp) {
+                            const date = new Date(location.walking_isochrone.timestamp);
+                            const formatted = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            walkingStatus.textContent = `✓ Calculada: ${formatted}`;
+                            walkingStatus.style.color = '#22c55e';
+                        } else {
+                            walkingStatus.textContent = '';
+                            walkingStatus.style.color = '#666';
+                        }
+                    }
+                    
+                    // Actualizar estado de driving isochrone
+                    const drivingStatus = document.getElementById('drivingIsochroneStatus');
+                    if (drivingStatus) {
+                        if (location.driving_isochrone && location.driving_isochrone.timestamp) {
+                            const date = new Date(location.driving_isochrone.timestamp);
+                            const formatted = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            drivingStatus.textContent = `✓ Calculada: ${formatted}`;
+                            drivingStatus.style.color = '#3b82f6';
+                        } else {
+                            drivingStatus.textContent = '';
+                            drivingStatus.style.color = '#666';
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[locationPage] Error actualizando indicadores de isocronas:', error);
+        }
+    }
+
+    /**
      * Calcular y mostrar isocrona de 5 minutos a pie
      */
     async calculateIsochroneWalking() {
@@ -517,7 +659,17 @@ export default class LocationPageManager {
             
             if (isoData.features && isoData.features.length > 0) {
                 const isoGeometry = isoData.features[0].geometry;
+                const isoProperties = isoData.features[0].properties;
                 this.isochroneManager.drawIsochrone(isoGeometry, 'walking');
+                
+                // Guardar datos de isocronas en la localidad
+                const isochroneData = {
+                    geometry: isoGeometry,
+                    area: isoProperties.area || 0,
+                    reachfactor: isoProperties.reachfactor || 0,
+                    timestamp: new Date().toISOString()
+                };
+                this.saveCurrentLocationWithIsochrone('walking', isochroneData);
                 
                 // Calcular estadísticas si tenemos datos INEC
                 try {
@@ -561,7 +713,17 @@ export default class LocationPageManager {
             
             if (isoData.features && isoData.features.length > 0) {
                 const isoGeometry = isoData.features[0].geometry;
+                const isoProperties = isoData.features[0].properties;
                 this.isochroneManager.drawIsochrone(isoGeometry, 'driving');
+                
+                // Guardar datos de isocronas en la localidad
+                const isochroneData = {
+                    geometry: isoGeometry,
+                    area: isoProperties.area || 0,
+                    reachfactor: isoProperties.reachfactor || 0,
+                    timestamp: new Date().toISOString()
+                };
+                this.saveCurrentLocationWithIsochrone('driving', isochroneData);
                 
                 // Calcular estadísticas si tenemos datos INEC
                 try {
