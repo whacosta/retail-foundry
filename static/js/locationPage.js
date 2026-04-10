@@ -13,6 +13,8 @@ import {
     getGlobalConfig 
 } from './storage.js';
 import { COMPETITOR_TYPES } from './constants.js';
+import IsochroneManager from './isochroneManager.js';
+import PopulationAnalyzer from './populationAnalyzer.js';
 
 export default class LocationPageManager {
     constructor() {
@@ -35,6 +37,10 @@ export default class LocationPageManager {
         this.currentLocationId = null;
         this.originalLocationId = null; // Guardar el ID original en modo editar
         this.nextSuggestedId = 1; // Siguiente ID sugerido en modo crear
+        
+        // Managers para isocronas y análisis de población
+        this.isochroneManager = null;
+        this.populationAnalyzer = null;
     }
 
     /**
@@ -413,6 +419,10 @@ export default class LocationPageManager {
             maxWidth: 200
         }).addTo(this.map);
 
+        // Instanciar managers para isocronas y población
+        this.isochroneManager = new IsochroneManager(this.map);
+        this.populationAnalyzer = new PopulationAnalyzer();
+
         this.createDraggableMarker(lat, lon);
 
         this.map.on('click', (e) => {
@@ -490,6 +500,140 @@ export default class LocationPageManager {
 
         this.map.setView([lat, lon], this.map.getZoom());
         this.createDraggableMarker(lat, lon);
+    }
+
+    /**
+     * Calcular y mostrar isocrona de 5 minutos a pie
+     */
+    async calculateIsochroneWalking() {
+        if (!this.mapMarker) {
+            alert('Primero selecciona una ubicación en el mapa');
+            return;
+        }
+        
+        try {
+            const { lat, lng } = this.mapMarker.getLatLng();
+            const isoData = await this.isochroneManager.fetchIsochrone(lat, lng, 'foot-walking');
+            
+            if (isoData.features && isoData.features.length > 0) {
+                const isoGeometry = isoData.features[0].geometry;
+                this.isochroneManager.drawIsochrone(isoGeometry, 'walking');
+                
+                // Calcular estadísticas si tenemos datos INEC
+                try {
+                    if (!this.populationAnalyzer.populationData) {
+                        await this.populationAnalyzer.loadPopulationData();
+                    }
+                    const stats = this.populationAnalyzer.calculatePopulationInIsochrone(isoGeometry);
+                    const area = this.populationAnalyzer.calculateIsochroneArea(isoGeometry);
+                    const density = this.populationAnalyzer.calculateDensity(stats.totalPopulation, area);
+                    console.log(`[Walking] Población: ${stats.totalPopulation} hab | Área: ${area.toFixed(2)} km² | Densidad: ${density.toFixed(0)} hab/km²`);
+                    
+                    // Actualizar estadísticas en la página usando homes5Min
+                    const homes5Min = parseInt(document.getElementById('homes5Min').value) || 0;
+                    this.updatePopulationDisplay('walking', homes5Min, area, density);
+                } catch (e) {
+                    if (e.message.includes('no configurado')) {
+                        alert('⚠️ Datos INEC no configurados\n\nPara ver estadísticas de población:\n1. Abre Configuración\n2. Ve a "Configuraciones del Sistema"\n3. Ingresa la ruta de datos INEC y guarda\n\nLa isócrona se ha dibujado correctamente.');
+                    } else {
+                        console.warn('[locationPage] No se pudo cargar datos INEC:', e.message);
+                    }
+                }
+            }
+        } catch (error) {
+            alert('❌ Error calculando isócrona: ' + error.message);
+            console.error('[locationPage] Walking isochrone error:', error);
+        }
+    }
+
+    /**
+     * Calcular y mostrar isócrona de 10 minutos en auto
+     */
+    async calculateIsochroneDriving() {
+        if (!this.mapMarker) {
+            alert('Primero selecciona una ubicación en el mapa');
+            return;
+        }
+        
+        try {
+            const { lat, lng } = this.mapMarker.getLatLng();
+            const isoData = await this.isochroneManager.fetchIsochrone(lat, lng, 'driving-car');
+            
+            if (isoData.features && isoData.features.length > 0) {
+                const isoGeometry = isoData.features[0].geometry;
+                this.isochroneManager.drawIsochrone(isoGeometry, 'driving');
+                
+                // Calcular estadísticas si tenemos datos INEC
+                try {
+                    if (!this.populationAnalyzer.populationData) {
+                        await this.populationAnalyzer.loadPopulationData();
+                    }
+                    const stats = this.populationAnalyzer.calculatePopulationInIsochrone(isoGeometry);
+                    const area = this.populationAnalyzer.calculateIsochroneArea(isoGeometry);
+                    const density = this.populationAnalyzer.calculateDensity(stats.totalPopulation, area);
+                    console.log(`[Driving] Población: ${stats.totalPopulation} hab | Área: ${area.toFixed(2)} km² | Densidad: ${density.toFixed(0)} hab/km²`);
+                    
+                    // Actualizar estadísticas en la página usando homes10Min
+                    const homes10Min = parseInt(document.getElementById('homes10Min').value) || 0;
+                    this.updatePopulationDisplay('driving', homes10Min, area, density);
+                } catch (e) {
+                    if (e.message.includes('no configurado')) {
+                        alert('⚠️ Datos INEC no configurados\n\nPara ver estadísticas de población:\n1. Abre Configuración\n2. Ve a "Configuraciones del Sistema"\n3. Ingresa la ruta de datos INEC y guarda\n\nLa isócrona se ha dibujado correctamente.');
+                    } else {
+                        console.warn('[locationPage] No se pudo cargar datos INEC:', e.message);
+                    }
+                }
+            }
+        } catch (error) {
+            alert('❌ Error calculando isócrona: ' + error.message);
+            console.error('[locationPage] Driving isochrone error:', error);
+        }
+    }
+
+    /**
+     * Limpiar todas las isocronas del mapa
+     */
+    clearIsochrones() {
+        if (this.isochroneManager) {
+            this.isochroneManager.clearAll();
+            console.log('[locationPage] Isocronas limpiadas');
+        }
+        
+        // Limpiar estadísticas de la página
+        const statsDiv = document.getElementById('populationStats');
+        if (statsDiv) {
+            statsDiv.style.display = 'none';
+            document.getElementById('walkingPop').textContent = '—';
+            document.getElementById('walkingArea').textContent = '—';
+            document.getElementById('walkingDensity').textContent = '—';
+            document.getElementById('drivingPop').textContent = '—';
+            document.getElementById('drivingArea').textContent = '—';
+            document.getElementById('drivingDensity').textContent = '—';
+        }
+    }
+
+    /**
+     * Actualizar las estadísticas de población en la página
+     */
+    updatePopulationDisplay(type, population, areaKm2, density) {
+        const statsDiv = document.getElementById('populationStats');
+        if (!statsDiv) return;
+
+        // Formatear números con separador de miles
+        const formatNumber = (num) => Math.round(num).toLocaleString('es-EC');
+        
+        if (type === 'walking') {
+            document.getElementById('walkingPop').textContent = formatNumber(population);
+            document.getElementById('walkingArea').textContent = areaKm2.toFixed(2);
+            document.getElementById('walkingDensity').textContent = formatNumber(density);
+        } else if (type === 'driving') {
+            document.getElementById('drivingPop').textContent = formatNumber(population);
+            document.getElementById('drivingArea').textContent = areaKm2.toFixed(2);
+            document.getElementById('drivingDensity').textContent = formatNumber(density);
+        }
+
+        // Mostrar el div de estadísticas
+        statsDiv.style.display = 'block';
     }
 }
 

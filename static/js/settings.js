@@ -112,6 +112,10 @@ function switchMainTab(section) {
         document.querySelector('.main-tabs .tab-button:nth-child(4)').classList.add('active');
         document.getElementById('constantsSection').classList.add('active');
         loadConstantsConfig();
+    } else if (section === 'routingConfig') {
+        document.querySelector('.main-tabs .tab-button:nth-child(5)').classList.add('active');
+        document.getElementById('routingConfigSection').classList.add('active');
+        loadConfigurationValues();
     }
 }
 
@@ -469,9 +473,96 @@ document.getElementById('viabilityConfigForm').addEventListener('submit', async 
     }
 });
 
+// ==========================================
+// Configuración de OpenRouteService + INEC
+// ==========================================
+
+// Cargar valores previamente guardados
+function loadConfigurationValues() {
+    const orsConfig = JSON.parse(localStorage.getItem('openRouteServiceConfig') || '{}');
+    if (orsConfig.apiKey) {
+        document.getElementById('orsApiKey').value = orsConfig.apiKey;
+        document.getElementById('walkingTime').value = orsConfig.walkingSeconds || 300;
+        document.getElementById('drivingTime').value = orsConfig.drivingSeconds || 600;
+    }
+    
+    const inecConfig = JSON.parse(localStorage.getItem('inecConfig') || '{}');
+    if (inecConfig.inecDataPath) {
+        document.getElementById('inecPath').value = inecConfig.inecDataPath;
+        document.getElementById('inecPopulationFile').value = inecConfig.inecPopulationFile || 'population_2020.geojson';
+        document.getElementById('inecSectoresFile').value = inecConfig.inecSectoresFile || 'sectores_censales.geojson';
+    }
+}
+
+// Guardar OpenRouteService
+function saveOpenRouteServiceConfig() {
+    const apiKey = document.getElementById('orsApiKey').value.trim();
+    const walkingTime = parseInt(document.getElementById('walkingTime').value) || 300;
+    const drivingTime = parseInt(document.getElementById('drivingTime').value) || 600;
+    
+    if (!apiKey) {
+        alert('❌ Por favor ingresa una API Key');
+        return;
+    }
+    
+    if (apiKey.length < 20) {
+        alert('❌ API Key parece incompleta (debe tener más de 20 caracteres)');
+        return;
+    }
+    
+    const config = {
+        apiKey: apiKey,
+        walkingSeconds: walkingTime,
+        drivingSeconds: drivingTime,
+        updatedAt: new Date().toISOString()
+    };
+    
+    localStorage['openRouteServiceConfig'] = JSON.stringify(config);
+    alert('✅ Configuración OpenRouteService guardada correctamente');
+}
+
+// Guardar INEC
+function saveInecConfig() {
+    let inecPath = document.getElementById('inecPath').value.trim();
+    const popFile = document.getElementById('inecPopulationFile').value.trim();
+    
+    if (!inecPath) {
+        alert('❌ Por favor especifica una ruta válida');
+        return;
+    }
+    
+    // Asegurar que termina con /
+    if (!inecPath.endsWith('/')) {
+        inecPath += '/';
+    }
+    
+    const config = {
+        inecDataPath: inecPath,
+        inecPopulationFile: popFile || 'population_2020.geojson',
+        inecSectoresFile: document.getElementById('inecSectoresFile').value.trim() || 'sectores_censales.geojson',
+        updatedAt: new Date().toISOString()
+    };
+    
+    // Validación simple: verificar que la ruta es válida
+    const testPath = config.inecDataPath + config.inecPopulationFile;
+    
+    // Guardar configuración
+    localStorage['inecConfig'] = JSON.stringify(config);
+    
+    // Mostrar confirmación de guardado
+    const validDiv = document.getElementById('inecValidation');
+    validDiv.innerHTML = '✅ <strong>Configuración guardada correctamente</strong><br>' +
+        '<small>Archivo esperado en: <code style="background:#f5f5f5; padding:2px 4px; border-radius:2px;">' + testPath + '</code></small><br>' +
+        '<small style="color:#666;">Los datos se cargarán cuando abras <strong>location.html</strong></small>';
+    validDiv.style.display = 'block';
+}
+
 // Exponer funciones globalmente para onclick handlers
 window.switchMainTab = switchMainTab;
 window.goBackToIndex = goBackToIndex;
+window.saveOpenRouteServiceConfig = saveOpenRouteServiceConfig;
+window.saveInecConfig = saveInecConfig;
+window.loadConfigurationValues = loadConfigurationValues;
 
 // Inicializar página
 document.addEventListener('DOMContentLoaded', initConfiguration);

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="static/css/styles.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -65,7 +66,48 @@
                     <p style="font-size:0.9rem; color:#555; margin-bottom:8px;">
                         Arrastra el marcador para ajustar las coordenadas de la localidad.
                     </p>
-                    <div id="map" style="width:100%; height:380px; border:1px solid #d8d8d8; border-radius:8px;"></div>
+                    <div style="position: relative; width: 100%;">
+                        <div id="map" style="width:100%; height:380px; border:1px solid #d8d8d8; border-radius:8px;"></div>
+                        <!-- Controles de isocronas -->
+                        <div id="isochroneControls" style="position: absolute; top: 10px; right: 10px; z-index: 400; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="margin-bottom: 8px; font-weight: bold; font-size: 12px; color: #333;">Áreas de Influencia</div>
+                            <button type="button" onclick="locationPageInstance.calculateIsochroneWalking()" style="background: #22c55e; color: white; padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 13px;">
+                                🚶 5 min a pie
+                            </button>
+                            <button type="button" onclick="locationPageInstance.calculateIsochroneDriving()" style="background: #3b82f6; color: white; padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 13px;">
+                                🚗 10 min auto
+                            </button>
+                            <button type="button" onclick="locationPageInstance.clearIsochrones()" style="background: #ef4444; color: white; padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; width: 100%; font-size: 13px;">
+                                ✕ Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas de Población INEC -->
+                    <div id="populationStats" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea; display: none;">
+                        <h4 style="margin: 0 0 12px 0; color: #333; font-size: 14px;">📊 Estadísticas de Población INEC</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <!-- Estadísticas a pie -->
+                            <div style="padding: 12px; background: white; border-radius: 4px; border-left: 4px solid #22c55e;">
+                                <div style="font-weight: bold; color: #22c55e; margin-bottom: 8px;">🚶 Zona a Pie (5 min)</div>
+                                <div style="font-size: 13px; color: #555;">
+                                    <div style="margin-bottom: 6px;"><span style="color: #666;">Población:</span> <strong id="walkingPop">—</strong> hab</div>
+                                    <div style="margin-bottom: 6px;"><span style="color: #666;">Área:</span> <strong id="walkingArea">—</strong> km²</div>
+                                    <div><span style="color: #666;">Densidad:</span> <strong id="walkingDensity">—</strong> hab/km²</div>
+                                </div>
+                            </div>
+
+                            <!-- Estadísticas en auto -->
+                            <div style="padding: 12px; background: white; border-radius: 4px; border-left: 4px solid #3b82f6;">
+                                <div style="font-weight: bold; color: #3b82f6; margin-bottom: 8px;">🚗 Zona en Auto (10 min)</div>
+                                <div style="font-size: 13px; color: #555;">
+                                    <div style="margin-bottom: 6px;"><span style="color: #666;">Población:</span> <strong id="drivingPop">—</strong> hab</div>
+                                    <div style="margin-bottom: 6px;"><span style="color: #666;">Área:</span> <strong id="drivingArea">—</strong> km²</div>
+                                    <div><span style="color: #666;">Densidad:</span> <strong id="drivingDensity">—</strong> hab/km²</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <h3>Información Demográfica</h3>
@@ -194,8 +236,8 @@
 
         // Inicializar storage y cargar la página
         initStorage();
-        const manager = new LocationPageManager();
-        manager.init();
+        window.locationPageInstance = new LocationPageManager();
+        window.locationPageInstance.init();
     </script>
 </body>
 </html>

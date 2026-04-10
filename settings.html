@@ -28,6 +28,7 @@
                 <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
                 <button type="button" class="tab-button" onclick="switchMainTab('viability')">Criterios de Viabilidad</button>
                 <button type="button" class="tab-button" onclick="switchMainTab('constants')">Constantes del Sistema</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('routingConfig')">⚙️ Configuraciones del Sistema</button>
             </div>
             
             <!-- Sección de Zonas de Movilidad -->
@@ -103,6 +104,99 @@
                         <button type="button" class="btn btn-secondary" onclick="goBackToIndex()">Volver al Inicio</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Sección de Configuraciones del Sistema (OpenRouteService + INEC) -->
+            <div id="routingConfigSection" class="config-section-container">
+                
+                <!-- SECCIÓN 1: OpenRouteService -->
+                <fieldset style="border:1px solid #ddd; padding:15px; margin-bottom:20px; border-radius:6px;">
+                    <legend style="font-weight:bold; padding:0 8px;">🗺️ OpenRouteService</legend>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label for="orsApiKey" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                            API Key <span style="color:red;">*</span>
+                        </label>
+                        <input type="password" id="orsApiKey" placeholder="Pega aquí tu API Key de openrouteservice.org" 
+                               style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                        <small style="color:#666; display:block; margin-top:5px;">
+                            ¿No tienes? → <a href="https://openrouteservice.org/dev/#/signup" target="_blank" style="color:#3b82f6;">Regístrate aquí (es gratis)</a><br>
+                            Límite: 2,500 requests/día
+                        </small>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div>
+                            <label for="walkingTime" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                                Tiempo A Pie (segundos)
+                            </label>
+                            <input type="number" id="walkingTime" value="300" min="60" max="3600" 
+                                   style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                            <small style="color:#666;">5 minutos = 300 seg</small>
+                        </div>
+                        
+                        <div>
+                            <label for="drivingTime" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                                Tiempo En Auto (segundos)
+                            </label>
+                            <input type="number" id="drivingTime" value="600" min="60" max="3600" 
+                                   style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                            <small style="color:#666;">10 minutos = 600 seg</small>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="saveOpenRouteServiceConfig()" 
+                            style="margin-top:15px; background:#22c55e; color:white; padding:12px 24px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">
+                        ✓ Guardar Configuración OpenRouteService
+                    </button>
+                </fieldset>
+                
+                <!-- SECCIÓN 2: Datos INEC -->
+                <fieldset style="border:1px solid #ddd; padding:15px; border-radius:6px;">
+                    <legend style="font-weight:bold; padding:0 8px;">📊 Datos INEC (Población)</legend>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label for="inecPath" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                            Ruta de Carpeta INEC <span style="color:red;">*</span>
+                        </label>
+                        <input type="text" id="inecPath" placeholder="Ej: /Users/wilmer/Downloads/inec/ o ~/mi-carpeta/inec/" 
+                               style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                        <small style="color:#666; display:block; margin-top:5px;">
+                            Especifica la carpeta completa donde guardaste los archivos INEC (debe terminar con /)<br>
+                            ¿No tienes datos? → <a href="https://www.ecuadorencifras.gob.ec/" target="_blank" style="color:#3b82f6;">Descarga cartografía digital aquí</a> (Cartografía Digital → Sectores Censales)
+                        </small>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div>
+                            <label for="inecPopulationFile" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                                Archivo de Población
+                            </label>
+                            <input type="text" id="inecPopulationFile" value="population_2020.geojson" 
+                                   style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                            <small style="color:#666;">Nombre del archivo .geojson</small>
+                        </div>
+                        
+                        <div>
+                            <label for="inecSectoresFile" style="display:block; font-weight:bold; margin-bottom:5px; color:#333;">
+                                Archivo Sectores (opcional)
+                            </label>
+                            <input type="text" id="inecSectoresFile" value="sectores_censales.geojson" 
+                                   style="width:100%; padding:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                            <small style="color:#666;">Para uso futuro</small>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="saveInecConfig()" 
+                            style="margin-top:15px; background:#3b82f6; color:white; padding:12px 24px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">
+                        ✓ Guardar Configuración INEC
+                    </button>
+                    
+                    <div id="inecValidation" style="margin-top:12px; padding:10px; background:#f0f9ff; border-left:4px solid #3b82f6; border-radius:4px; display:none; color:#1e40af;">
+                        <!-- Aquí aparecerán mensajes de validación -->
+                    </div>
+                </fieldset>
+                
             </div>
         </div>
     </div>
