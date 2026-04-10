@@ -26,7 +26,7 @@
                     <span class="btn-text-full">📤 Importar Datos</span>
                     <span class="btn-text-short">📤 Importar</span>
                 </button>
-                <button id="configBtn" class="btn btn-secondary">
+                <button id="configBtn" class="btn btn-secondary" onclick="window.location.href='settings.html'">
                     <span class="btn-text-full">⚙️ Configuración</span>
                     <span class="btn-text-short">⚙️ Config</span>
                 </button>
@@ -88,96 +88,7 @@
         </div>
     </div>
 
-    <div id="configModal" class="modal">
-        <div class="modal-content">
-            <span class="close-config">&times;</span>
-            <h2>Configuración</h2>
-            <p class="config-description">Configure los parámetros del sistema</p>
-            
-            <!-- Tabs principales: Zonas, Ingresos, Viabilidad y Constantes -->
-            <div class="tabs main-tabs">
-                <button type="button" class="tab-button active" onclick="switchMainTab('zones')">Zonas de Movilidad</button>
-                <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
-                <button type="button" class="tab-button" onclick="switchMainTab('viability')">Criterios de Viabilidad</button>
-                <button type="button" class="tab-button" onclick="switchMainTab('constants')">Constantes del Sistema</button>
-            </div>
-            
-            <!-- Sección de Zonas de Movilidad -->
-            <div id="zonesSection" class="config-section-container active">
-                <form id="configForm">
-                    <div id="zonesConfig"></div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelConfigBtn">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Sección de Ingresos NSE -->
-            <div id="incomesSection" class="config-section-container">
-                <form id="globalConfigForm">
-                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Ingresos Promedio por NSE</h3>
-                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los ingresos promedio por nivel socioeconómico (valores globales)</p>
-                    
-                    <div class="form-row">
-                        <div class="form-group input-with-symbol currency" data-symbol="$">
-                            <label for="globalIncomeD">Ingresos NSE D *</label>
-                            <input type="number" id="globalIncomeD" step="0.01" required>
-                        </div>
-                        <div class="form-group input-with-symbol currency" data-symbol="$">
-                            <label for="globalIncomeCMinus">Ingresos NSE C- *</label>
-                            <input type="number" id="globalIncomeCMinus" step="0.01" required>
-                        </div>
-                    </div>
 
-                    <div class="form-row">
-                        <div class="form-group input-with-symbol currency" data-symbol="$">
-                            <label for="globalIncomeCPlus">Ingresos NSE C+ *</label>
-                            <input type="number" id="globalIncomeCPlus" step="0.01" required>
-                        </div>
-                        <div class="form-group input-with-symbol currency" data-symbol="$">
-                            <label for="globalIncomeB">Ingresos NSE B *</label>
-                            <input type="number" id="globalIncomeB" step="0.01" required>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelGlobalConfigBtn">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Sección de Criterios de Viabilidad -->
-            <div id="viabilitySection" class="config-section-container">
-                <form id="viabilityConfigForm">
-                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Criterios de Viabilidad por Tipo de Localidad</h3>
-                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los umbrales de viabilidad según el tipo de formato</p>
-                    
-                    <div id="viabilityConfig"></div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelViabilityConfigBtn">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Sección de Constantes del Sistema -->
-            <div id="constantsSection" class="config-section-container">
-                <div style="padding: 20px 0;">
-                    <h3 style="margin-top: 0; margin-bottom: 10px;">Constantes del Sistema</h3>
-                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Valores de referencia utilizados en los cálculos del sistema (solo lectura)</p>
-                    
-                    <div id="constantsConfig"></div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cerrar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 2px solid #e0e0e0; color: #666;">
         <p style="margin: 0; font-size: 0.9em;">

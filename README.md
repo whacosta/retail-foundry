@@ -3,7 +3,7 @@
 Aplicación para analizar la factibilidad de localidades para abrir tiendas de retail.
 Las formulas estan calibradas para su uso en el mercado Ecuatoriano, las constantes deben refinarse según la realidad geografica de cada retail.
 
-Esta aplicación fue desarrollada con Claude Sonnet 4.5 
+Esta aplicación fue desarrollada con Claude Haiku 4.5 
 
 Según pruebas tiene un porcentaje de confiabilidad del 85% comparando los datos con los datos reales del local posterior a su apertura.
 Se debe considerar la accesibilidad demografica del sector, que puede influir en los calculos y generar fallas en los resultados.
@@ -577,7 +577,7 @@ retail-foundry/
 
 ## 🤝 Contribuciones
 
-Este proyecto fue desarrollado con **Claude Sonnet 4.5** como asistente de desarrollo.
+Este proyecto fue desarrollado con **Claude Haiku 4.5** como asistente de desarrollo.
 
 Para reportar bugs o sugerir mejoras, visita el repositorio en GitHub.
 

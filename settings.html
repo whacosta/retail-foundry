@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Retail Foundry</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Configuración del Sistema</h1>
+                <p class="subtitle">Configure los parámetros de Retail Foundry</p>
+            </div>
+            <div class="header-buttons">
+                <button id="backBtn" class="btn btn-secondary" onclick="goBackToIndex()">
+                    <span class="btn-text-full">← Volver al Inicio</span>
+                    <span class="btn-text-short">← Volver</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="configuration-content">
+            <!-- Tabs principales: Zonas, Ingresos, Viabilidad y Constantes -->
+            <div class="tabs main-tabs">
+                <button type="button" class="tab-button active" onclick="switchMainTab('zones')">Zonas de Movilidad</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('incomes')">Ingresos NSE</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('viability')">Criterios de Viabilidad</button>
+                <button type="button" class="tab-button" onclick="switchMainTab('constants')">Constantes del Sistema</button>
+            </div>
+            
+            <!-- Sección de Zonas de Movilidad -->
+            <div id="zonesSection" class="config-section-container active">
+                <form id="configForm">
+                    <div id="zonesConfig"></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="goBackToIndex()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Sección de Ingresos NSE -->
+            <div id="incomesSection" class="config-section-container">
+                <form id="globalConfigForm">
+                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Ingresos Promedio por NSE</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los ingresos promedio por nivel socioeconómico (valores globales)</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeD">Ingresos NSE D *</label>
+                            <input type="number" id="globalIncomeD" step="0.01" required>
+                        </div>
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeCMinus">Ingresos NSE C- *</label>
+                            <input type="number" id="globalIncomeCMinus" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeCPlus">Ingresos NSE C+ *</label>
+                            <input type="number" id="globalIncomeCPlus" step="0.01" required>
+                        </div>
+                        <div class="form-group input-with-symbol currency" data-symbol="$">
+                            <label for="globalIncomeB">Ingresos NSE B *</label>
+                            <input type="number" id="globalIncomeB" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="goBackToIndex()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Sección de Criterios de Viabilidad -->
+            <div id="viabilitySection" class="config-section-container">
+                <form id="viabilityConfigForm">
+                    <h3 style="margin-top: 20px; margin-bottom: 15px;">Criterios de Viabilidad por Tipo de Localidad</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Configure los umbrales de viabilidad según el tipo de formato</p>
+                    
+                    <div id="viabilityConfig"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="goBackToIndex()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Sección de Constantes del Sistema -->
+            <div id="constantsSection" class="config-section-container">
+                <div style="padding: 20px 0;">
+                    <h3 style="margin-top: 0; margin-bottom: 10px;">Constantes del Sistema</h3>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">Valores de referencia utilizados en los cálculos del sistema (solo lectura)</p>
+                    
+                    <div id="constantsConfig"></div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="goBackToIndex()">Volver al Inicio</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 2px solid #e0e0e0; color: #666;">
+        <p style="margin: 0; font-size: 0.9em;">
+            Powered by <a href="https://github.com/whacosta" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 600;">@whacosta</a>
+        </p>
+    </footer>
+
+    <script type="module" src="static/js/settings.js"></script>
+</body>
+</html>
